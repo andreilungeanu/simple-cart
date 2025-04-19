@@ -14,24 +14,13 @@ class ShippingCalculator implements Calculator
 
     public function calculate(CartDTO $cart): float
     {
-        if (!$cart->getShippingMethod()) {
-            return 0.0;
-        }
-
-        if ($this->isEligibleForFreeShipping($cart)) {
+        if (! $cart->getShippingMethod()) {
             return 0.0;
         }
 
         $rateInfo = $this->provider->getRate($cart, $cart->getShippingMethod());
-        return round($rateInfo['amount'], 2);
-    }
 
-    protected function isEligibleForFreeShipping(CartDTO $cart): bool
-    {
-        $threshold = (float)config('simple-cart.shipping.settings.free_shipping_threshold');
-
-
-        return $cart->getSubtotal() >= $threshold;
+        return $rateInfo['amount'];
     }
 
     public function getAvailableMethods(CartDTO $cart): array
@@ -41,7 +30,7 @@ class ShippingCalculator implements Calculator
 
     public function getShippingInfo(CartDTO $cart): ?array
     {
-        if (!$cart->getShippingMethod()) {
+        if (! $cart->getShippingMethod()) {
             return null;
         }
 

@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Integration;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
+use AndreiLungeanu\SimpleCart\SimpleCart;
 use Illuminate\Support\Facades\Event;
 
 test('cart persistence works with database', function () {
