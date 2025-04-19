@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
+use AndreiLungeanu\SimpleCart\Commands\SimpleCartCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use AndreiLungeanu\SimpleCart\Commands\SimpleCartCommand;
 
 class SimpleCartServiceProvider extends PackageServiceProvider
 {
