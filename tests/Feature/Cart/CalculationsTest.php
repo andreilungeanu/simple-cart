@@ -46,7 +46,7 @@ test('maintains precision in calculations', function () {
 
     for ($i = 0; $i < 10; $i++) {
         $cart->addItem(new CartItemDTO(
-            id: (string)$i,
+            id: (string) $i,
             name: "Item $i",
             price: 9.99,
             quantity: 1,

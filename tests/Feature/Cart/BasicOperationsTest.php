@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Cart;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 test('can create a new cart', function () {
     $cart = app(SimpleCart::class)->create();
@@ -41,6 +41,6 @@ test('can update item quantity', function () {
 
 test('throws exception when accessing empty cart', function () {
     $cart = app(SimpleCart::class);
-    expect(fn() => $cart->updateQuantity('1', 2))
+    expect(fn () => $cart->updateQuantity('1', 2))
         ->toThrow(CartException::class, 'Cart not found');
 });

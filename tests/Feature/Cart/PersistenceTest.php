@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Cart;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 test('can save and retrieve cart', function () {
     $cart = app(SimpleCart::class)
