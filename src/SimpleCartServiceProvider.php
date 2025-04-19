@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
+
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use AndreiLungeanu\SimpleCart\Commands\SimpleCartCommand;
 use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
 use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository;
 use AndreiLungeanu\SimpleCart\Listeners\CartEventSubscriber;

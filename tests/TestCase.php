@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests;
 
+use AndreiLungeanu\SimpleCart\SimpleCartServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use AndreiLungeanu\SimpleCart\SimpleCartServiceProvider;
 
 class TestCase extends Orchestra
 {
