@@ -17,7 +17,6 @@ A flexible shopping cart implementation for Laravel with support for multiple di
 - Event-driven architecture
 - Comprehensive test coverage
 
-
 ## Installation
 
 ```bash
@@ -227,6 +226,36 @@ return [
     ],
     // ...more configuration options
 ];
+```
+
+
+### Shipping Thresholds
+
+```php
+'shipping' => [
+    'settings' => [
+        'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
+        // ...other settings
+    ],
+],
+```
+
+### Tax Zones and Rates
+
+```php
+'tax' => [
+    'settings' => [
+        'zones' => [
+            'RO' => [
+                'default_rate' => 0.19,
+                'rates_by_category' => [
+                    'books' => 0.05,
+                    'food' => 0.09,
+                ],
+            ],
+        ],
+    ],
+],
 ```
 
 ## Shipping & Tax Configuration

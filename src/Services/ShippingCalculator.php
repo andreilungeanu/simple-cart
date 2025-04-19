@@ -18,8 +18,20 @@ class ShippingCalculator implements Calculator
             return 0.0;
         }
 
+        if ($this->isEligibleForFreeShipping($cart)) {
+            return 0.0;
+        }
+
         $rateInfo = $this->provider->getRate($cart, $cart->getShippingMethod());
-        return $rateInfo['amount'];
+        return round($rateInfo['amount'], 2);
+    }
+
+    protected function isEligibleForFreeShipping(CartDTO $cart): bool
+    {
+        $threshold = (float)config('simple-cart.shipping.settings.free_shipping_threshold');
+
+
+        return $cart->getSubtotal() >= $threshold;
     }
 
     public function getAvailableMethods(CartDTO $cart): array

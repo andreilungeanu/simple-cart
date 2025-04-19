@@ -11,7 +11,15 @@ readonly class CartItemDTO
         public int $quantity,
         public ?string $category = null,
         public array $metadata = [],
-    ) {}
+    ) {
+        if ($price < 0 || $price > 999999.99) {
+            throw new \InvalidArgumentException('Price must be between 0 and 999,999.99');
+        }
+
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be positive');
+        }
+    }
 
     public function withQuantity(int $quantity): self
     {
