@@ -116,14 +116,14 @@ class CartDTO
     {
         return $this->round(
             $this->items->sum(
-                fn($item) => $item->price * $item->quantity
+                fn ($item) => $item->price * $item->quantity
             )
         );
     }
 
     public function getItemCount(): int
     {
-        return $this->items->sum(fn($item) => $item->quantity);
+        return $this->items->sum(fn ($item) => $item->quantity);
     }
 
     public function getShippingCost(): float
@@ -142,7 +142,7 @@ class CartDTO
         }
 
         $itemsTax = app(TaxCalculator::class)->calculate($this);
-        $shippingTax = $this->currentShippingMethod && !$this->shippingVatIncluded
+        $shippingTax = $this->currentShippingMethod && ! $this->shippingVatIncluded
             ? $this->calculateShippingVat()
             : 0.0;
         $extraCostsTax = $this->getExtraCostsTax();
@@ -187,6 +187,7 @@ class CartDTO
         }
 
         $rate = $this->defaultVatRate();
+
         return $this->round($this->getExtraCostsTotal() * $rate);
     }
 
@@ -223,11 +224,12 @@ class CartDTO
 
     public function calculateShippingVat(): float
     {
-        if ($this->isVatExempt() || !$this->currentShippingMethod) {
+        if ($this->isVatExempt() || ! $this->currentShippingMethod) {
             return 0.0;
         }
 
         $rate = $this->shippingVatRate ?? $this->defaultVatRate();
+
         return $this->round($this->getShippingAmount() * $rate);
     }
 
