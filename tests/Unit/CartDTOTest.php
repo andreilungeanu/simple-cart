@@ -13,14 +13,14 @@ test('can calculate total with discounts and tax', function () {
                 name: 'Test Product',
                 price: 100.00,
                 quantity: 1
-            )
+            ),
         ],
         discounts: [
             new DiscountDTO(
                 code: 'TEST10',
                 type: 'percentage',
                 value: 10
-            )
+            ),
         ],
         taxZone: 'US'
     );
@@ -37,7 +37,7 @@ test('can handle multiple discounts', function () {
                 name: 'Test Product',
                 price: 100.00,
                 quantity: 1
-            )
+            ),
         ],
         discounts: [
             new DiscountDTO(code: 'FIXED10', type: 'fixed', value: 10),
@@ -50,7 +50,7 @@ test('can handle multiple discounts', function () {
 });
 
 test('empty cart returns zero total', function () {
-    $cart = new CartDTO();
+    $cart = new CartDTO;
 
     expect($cart->calculateTotal())->toBe(0.0)
         ->and($cart->getItems()->isEmpty())->toBeTrue();
@@ -120,7 +120,7 @@ test('handles complex cart calculations correctly', function () {
     $cart->setShippingMethod('express', [
         'amount' => 15.99,
         'vat_included' => true,
-        'vat_rate' => 0.19
+        'vat_rate' => 0.19,
     ]);
 
     // Add extra cost
@@ -135,9 +135,9 @@ test('handles complex cart calculations correctly', function () {
 });
 
 test('throws exception when adding invalid quantity', function () {
-    $cart = new CartDTO();
+    $cart = new CartDTO;
 
-    expect(fn() => $cart->updateItemQuantity('1', -1))
+    expect(fn () => $cart->updateItemQuantity('1', -1))
         ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 });
 
@@ -160,7 +160,7 @@ test('maintains precision in calculations', function () {
 
     for ($i = 0; $i < 10; $i++) {
         $cart->addItem(new CartItemDTO(
-            id: (string)$i,
+            id: (string) $i,
             name: "Item $i",
             price: 9.99,
             quantity: 1,

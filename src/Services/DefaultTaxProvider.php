@@ -9,7 +9,7 @@ class DefaultTaxProvider implements TaxRateProvider
 {
     public function getRate(CartDTO $cart): float
     {
-        if (!$cart->taxZone) {
+        if (! $cart->taxZone) {
             return 0.0;
         }
 
@@ -24,18 +24,21 @@ class DefaultTaxProvider implements TaxRateProvider
     protected function getRateForZone(string $zone): float
     {
         $zoneConfig = $this->getAvailableZones()[$zone] ?? null;
+
         return $zoneConfig['default_rate'] ?? 0.0;
     }
 
     public function getRateForCategory(string $zone, string $category): ?float
     {
         $zoneConfig = config("simple-cart.tax.settings.zones.{$zone}");
+
         return $zoneConfig['rates_by_category'][$category] ?? null;
     }
 
     protected function shouldApplyToShipping(string $zone): bool
     {
         $zoneConfig = $this->getAvailableZones()[$zone] ?? null;
+
         return $zoneConfig['apply_to_shipping'] ?? false;
     }
 

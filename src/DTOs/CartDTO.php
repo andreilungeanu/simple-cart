@@ -2,25 +2,32 @@
 
 namespace AndreiLungeanu\SimpleCart\DTOs;
 
-use Illuminate\Support\Collection;
+use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Services\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\TaxCalculator;
-use AndreiLungeanu\SimpleCart\Services\DiscountCalculator;
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use Illuminate\Support\Collection;
 
 class CartDTO
 {
     protected Collection $items;
+
     protected Collection $discounts;
+
     protected Collection $notes;
+
     protected Collection $extraCosts;
 
     private float $calculatedTax = 0.0;
+
     private float $calculatedShipping = 0.0;
+
     private float $calculatedDiscount = 0.0;
 
     private ?float $shippingVatRate = null;
+
     private bool $shippingVatIncluded = false;
+
     private bool $vatExempt = false;
 
     protected ?string $currentShippingMethod = null;
@@ -76,6 +83,7 @@ class CartDTO
             if ($item->id === $itemId) {
                 return $item->withQuantity($quantity);
             }
+
             return $item;
         });
     }
@@ -114,19 +122,19 @@ class CartDTO
     {
         return $this->round(
             $this->items->sum(
-                fn($item) => $item->price * $item->quantity
+                fn ($item) => $item->price * $item->quantity
             )
         );
     }
 
     public function getItemCount(): int
     {
-        return $this->items->sum(fn($item) => $item->quantity);
+        return $this->items->sum(fn ($item) => $item->quantity);
     }
 
     public function getShippingCost(): float
     {
-        if (!$this->currentShippingMethod) {
+        if (! $this->currentShippingMethod) {
             return 0.0;
         }
 
@@ -138,6 +146,7 @@ class CartDTO
         if ($this->calculatedTax === 0.0) {
             $this->calculatedTax = app(TaxCalculator::class)->calculate($this);
         }
+
         return $this->round($this->calculatedTax);
     }
 
@@ -146,6 +155,7 @@ class CartDTO
         if ($this->calculatedShipping === 0.0) {
             $this->calculatedShipping = app(ShippingCalculator::class)->calculate($this);
         }
+
         return $this->calculatedShipping;
     }
 
@@ -154,6 +164,7 @@ class CartDTO
         if ($this->calculatedDiscount === 0.0) {
             $this->calculatedDiscount = app(DiscountCalculator::class)->calculate($this);
         }
+
         return $this->calculatedDiscount;
     }
 
@@ -172,6 +183,7 @@ class CartDTO
             if ($cost->type === 'percentage') {
                 return ($this->getSubtotal() * $cost->amount) / 100;
             }
+
             return $cost->amount;
         });
     }
@@ -208,6 +220,7 @@ class CartDTO
         }
 
         $rate = $this->shippingVatRate ?? $this->defaultVatRate();
+
         return $this->getShippingAmount() * $rate;
     }
 

@@ -14,11 +14,12 @@ class ShippingCalculator implements Calculator
 
     public function calculate(CartDTO $cart): float
     {
-        if (!$cart->getShippingMethod()) {
+        if (! $cart->getShippingMethod()) {
             return 0.0;
         }
 
         $rateInfo = $this->provider->getRate($cart, $cart->getShippingMethod());
+
         return $rateInfo['amount'];
     }
 
@@ -29,7 +30,7 @@ class ShippingCalculator implements Calculator
 
     public function getShippingInfo(CartDTO $cart): ?array
     {
-        if (!$cart->getShippingMethod()) {
+        if (! $cart->getShippingMethod()) {
             return null;
         }
 
