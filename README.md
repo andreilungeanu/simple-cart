@@ -17,13 +17,6 @@ A flexible shopping cart implementation for Laravel with support for multiple di
 - Event-driven architecture
 - Comprehensive test coverage
 
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/simple-cart.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/simple-cart)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
 
 ## Installation
 
@@ -68,6 +61,143 @@ SimpleCart::get()->addExtraCost(new ExtraCostDTO(
 $total = SimpleCart::total();
 ```
 
+## Real-World Examples
+
+### B2B vs B2C Handling
+
+```php
+class OrderController
+{
+    public function store(Request $request)
+    {
+        $cart = new CartDTO(
+            taxZone: $request->country_code,
+            vatExempt: $this->shouldBeVatExempt($request)
+        );
+
+        // B2B: Company with VAT number - no VAT charged
+        if ($request->company_vat_number && $this->validateVatNumber($request->company_vat_number)) {
+            $cart->setVatExempt(true);
+        }
+
+        // Add products with different VAT rates
+        $cart->addItem(new CartItemDTO(
+            id: '1',
+            name: 'Business Software License',
+            price: 299.99,
+            quantity: 5,
+            category: 'digital', // Digital goods might have different VAT
+            metadata: [
+                'license_type' => 'business',
+                'seats' => 5,
+            ]
+        ));
+    }
+}
+```
+
+### Volume-Based Shipping
+
+```php
+class WarehouseShippingProvider implements ShippingRateProvider
+{
+    public function getRate(CartDTO $cart, string $method): array
+    {
+        $totalVolume = $this->calculateVolume($cart);
+        $totalWeight = $this->calculateWeight($cart);
+        
+        // Real carrier API call
+        $rate = $this->carrierApi->getRates([
+            'volume' => $totalVolume,
+            'weight' => $totalWeight,
+            'destination' => $cart->taxZone,
+            'service' => $method,
+        ]);
+
+        // Handle included/excluded VAT based on carrier
+        $vatIncluded = $this->carrierIncludesVat($rate->carrier);
+        
+        return [
+            'amount' => $rate->amount,
+            'vat_rate' => $vatIncluded ? $this->extractVatRate($rate) : null,
+            'vat_included' => $vatIncluded,
+            'metadata' => [
+                'carrier' => $rate->carrier,
+                'service' => $rate->service,
+                'delivery_estimate' => $rate->deliveryDays,
+                'tracking_available' => $rate->hasTracking,
+            ]
+        ];
+    }
+}
+```
+
+### Special Pricing and Discounts
+
+```php
+// Tiered pricing based on quantity
+$cart->addItem(new CartItemDTO(
+    id: '1',
+    name: 'Bulk Product',
+    price: $this->getTieredPrice($quantity), // e.g., 10+ units = 10% off
+    quantity: $quantity,
+    metadata: [
+        'original_price' => $originalPrice,
+        'tier_discount' => $discountPercent,
+    ]
+));
+
+// Bundle pricing
+$bundleItems = [
+    new CartItemDTO(id: '1', name: 'Main Product', price: 100.00, quantity: 1),
+    new CartItemDTO(id: '2', name: 'Bundle Item', price: 0.00, quantity: 1, metadata: ['bundle_parent' => '1']),
+];
+
+foreach ($bundleItems as $item) {
+    $cart->addItem($item);
+}
+
+// Seasonal tax adjustments
+if ($this->isHolidaySeason()) {
+    $cart->addItem(new CartItemDTO(
+        id: '1',
+        name: 'Holiday Gift Set',
+        price: 49.99,
+        quantity: 1,
+        category: 'gift_sets', // Special holiday VAT rate
+    ));
+}
+```
+
+### Multi-Currency Support
+
+```php
+class InternationalCart
+{
+    public function createCart(string $currency): CartDTO
+    {
+        $cart = new CartDTO(
+            taxZone: $this->getDefaultZoneForCurrency($currency),
+            metadata: ['display_currency' => $currency]
+        );
+
+        // Add items with currency conversion
+        $cart->addItem(new CartItemDTO(
+            id: '1',
+            name: 'International Product',
+            price: $this->convertToLocalPrice(99.99, $currency),
+            quantity: 1,
+            metadata: [
+                'base_price_usd' => 99.99,
+                'exchange_rate' => $this->getExchangeRate($currency),
+            ]
+        ));
+
+        return $cart;
+    }
+}
+```
+
 ## Configuration
 
 Publish the configuration file:
@@ -99,76 +229,98 @@ return [
 ];
 ```
 
-Optionally, you can publish the views using
+## Shipping & Tax Configuration
 
-```bash
-php artisan vendor:publish --tag="simple-cart-views"
-```
-
-## Tax Configuration
-
-The cart supports flexible tax configurations including category-based rates:
+### Shipping Configuration
 
 ```php
-// Configure tax zones with different rates
-return [
-    'tax' => [
-        'provider' => DefaultTaxProvider::class,
-        'settings' => [
-            'zones' => [
-                'US' => [
-                    'name' => 'United States',
-                    'default_rate' => env('CART_US_TAX_RATE', 0.0725),
-                    'apply_to_shipping' => false,
-                    'rates_by_category' => [
-                        'digital' => 0.0,  // Tax-free digital goods
-                        'food' => 0.03,    // Reduced rate
-                    ],
-                ],
+'shipping' => [
+    'provider' => DefaultShippingProvider::class,
+    'settings' => [
+        'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
+        'methods' => [
+            'standard' => [
+                'cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
+                'name' => 'Standard Shipping',
+                'vat_included' => false,
+                'vat_rate' => null, // Uses cart's VAT rate
+            ],
+            'express' => [
+                'cost' => env('CART_EXPRESS_SHIPPING_COST', 15.99),
+                'name' => 'Express Shipping',
+                'vat_included' => false,
+                'vat_rate' => null,
             ],
         ],
     ],
-];
-
-// Usage in cart
-$cart = new CartDTO(taxZone: 'US');
-$item = new CartItemDTO(
-    id: '1',
-    name: 'Digital Book',
-    price: 29.99,
-    category: 'digital'
-);
+],
 ```
 
-## Shipping Configuration
-
-Shipping rates can be configured with base costs and per-item additions:
+### External Shipping Provider Example
 
 ```php
-// Configure shipping methods
-return [
-    'shipping' => [
-        'settings' => [
-            'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
-            'base_rates' => [
-                'standard' => [
-                    'base_cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
-                    'item_cost' => env('CART_STANDARD_SHIPPING_ITEM_COST', 2.00),
-                    'estimate_days' => '3-5',
-                    'vat_rate' => null, // Uses cart's default VAT
-                ],
-            ],
-        ],
-    ],
-];
+class ExternalShippingProvider implements ShippingRateProvider
+{
+    public function getRate(CartDTO $cart, string $method): array
+    {
+        // Get rates from external API
+        $externalRate = $this->apiClient->getRate([
+            'items' => $cart->getItems(),
+            'method' => $method,
+        ]);
 
-// Usage with external shipping provider
-$externalRate = [
+        return [
+            'amount' => $externalRate->total,
+            'vat_rate' => $externalRate->vatRate ?? null, // Optional specific VAT rate
+            'vat_included' => $externalRate->vatIncluded ?? false,
+        ];
+    }
+}
+```
+
+### VAT Handling
+
+The cart now supports three main VAT scenarios:
+
+1. Default cart VAT rate:
+```php
+$shipping = [
+    'amount' => 5.99,
+    'vat_included' => false,
+    'vat_rate' => null // Will use cart's VAT rate
+];
+```
+
+2. Pre-calculated VAT:
+```php
+$shipping = [
     'amount' => 15.99,
-    'vat_rate' => 0.10,
-    'vat_included' => true,
+    'vat_included' => true, // Amount includes VAT
+    'vat_rate' => 0.19 // For reporting purposes
 ];
-$cart->setShippingMethod('external', $externalRate);
+```
+
+3. Custom VAT rate:
+```php
+$shipping = [
+    'amount' => 10.99,
+    'vat_included' => false,
+    'vat_rate' => 0.10 // Use specific rate
+];
+```
+
+### VAT Exemption
+
+```php
+// Create VAT exempt cart
+$cart = new CartDTO(
+    taxZone: 'RO',
+    vatExempt: true
+);
+
+// VAT exempt calculations
+$total = $cart->calculateTotal(); // All amounts exclude VAT
+$taxAmount = $cart->getTaxAmount(); // Returns 0.0
 ```
 
 ## Advanced Usage Examples
@@ -333,145 +485,6 @@ $subtotal = $cart->getSubtotal();
 $tax = $cart->getTaxAmount();
 $shipping = $cart->getShippingAmount();
 $discounts = $cart->getDiscountAmount();
-```
-
-## Shipping & VAT
-
-The cart supports different VAT scenarios for shipping:
-
-```php
-// Default shipping with cart's VAT rate
-$defaultRate = $provider->getRate($cart, 'standard');
-// Returns:
-// [
-//     'amount' => 5.99,
-//     'vat_rate' => null, // Uses cart's VAT rate
-//     'vat_included' => false
-// ]
-
-// External shipping with included VAT
-$externalShipping = [
-    'amount' => 15.99,
-    'vat_rate' => 0.10, // 10% VAT
-    'vat_included' => true, // Price already includes VAT
-];
-$cart->setShippingMethod('external', $externalShipping);
-
-// Get shipping VAT information
-$vatInfo = $cart->getShippingVatInfo();
-// [
-//     'rate' => 0.10,
-//     'included' => true
-// ]
-```
-
-### Shipping VAT Handling
-
-```php
-// Basic shipping with cart's VAT rate
-$standardShipping = [
-    'amount' => 5.99,
-    'vat_included' => false,    // VAT will be calculated using cart's rate
-    'vat_rate' => null,         // Use cart's VAT rate
-];
-
-// Shipping with custom VAT rate
-$customVatShipping = [
-    'amount' => 15.99,
-    'vat_included' => false,    // VAT needs to be calculated
-    'vat_rate' => 0.10,        // Use 10% VAT specifically for shipping
-];
-
-// Shipping with VAT already included
-$includedVatShipping = [
-    'amount' => 19.99,
-    'vat_included' => true,     // Amount already includes VAT
-    'vat_rate' => 0.19,        // Store VAT rate for display/reporting
-];
-```
-
-### Shipping VAT Scenarios
-
-```php
-// Configuration examples for different VAT scenarios
-'shipping' => [
-    'settings' => [
-        'vat_handling' => [
-            // Use cart's VAT rate
-            'RO' => ['use_cart_vat' => true],
-            
-            // Use specific shipping VAT rate
-            'DE' => [
-                'use_cart_vat' => false,
-                'shipping_vat' => 0.19,
-            ],
-            
-            // No VAT on shipping
-            'US' => ['use_cart_vat' => false],
-        ],
-    ],
-],
-
-// External provider example with included VAT
-$externalRate = [
-    'amount' => 15.99,
-    'vat_rate' => 0.21,
-    'vat_included' => true, // VAT is already included in amount
-];
-
-// External provider example with VAT to be calculated
-$externalRate = [
-    'amount' => 12.99,
-    'vat_rate' => null, // Use cart's VAT rate
-    'vat_included' => false, // VAT needs to be added
-];
-```
-
-When using external shipping providers that include VAT in their rates:
-- Set `vat_included` to true
-- Provide the applied `vat_rate` for tax calculations
-- The cart will handle tax reporting correctly
-
-### VAT Exemption
-
-For B2B clients or special cases where VAT should not be applied:
-
-```php
-// Create cart with VAT exemption
-$cart = new CartDTO(
-    taxZone: 'RO',
-    vatExempt: true
-);
-
-// Or set VAT exemption later
-$cart->setVatExempt(true);
-
-// All calculations will exclude VAT
-$total = $cart->calculateTotal(); // No VAT included
-$shipping = $cart->getShippingAmount(); // No VAT added
-
-// You can check VAT status
-if ($cart->isVatExempt()) {
-    // Handle VAT exempt display/reporting
-}
-```
-
-## Stored Calculations
-
-The cart automatically stores calculated amounts:
-
-```php
-$cart = SimpleCart::create()
-    ->addItem($item)
-    ->save();
-
-// Access stored calculations
-$storedCart = Cart::find($cartId);
-$storedCart->tax_amount;     // Stored tax amount
-$storedCart->shipping_amount; // Stored shipping amount
-$storedCart->discount_amount; // Stored discount total
-$storedCart->subtotal_amount; // Stored subtotal
-$storedCart->total_amount;    // Stored final total
 ```
 
 ## Events
