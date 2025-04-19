@@ -2,10 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
 
 test('calculates basic shipping cost', function () {
     $cart = new CartDTO(
@@ -16,7 +16,7 @@ test('calculates basic shipping cost', function () {
         shippingMethod: 'standard'
     );
 
-    $calculator = new ShippingCalculator(new DefaultShippingProvider());
+    $calculator = new ShippingCalculator(new DefaultShippingProvider);
     $shippingCost = $calculator->calculate($cart);
 
     // Standard shipping fixed cost
@@ -31,7 +31,7 @@ test('applies free shipping threshold', function () {
         shippingMethod: 'standard'
     );
 
-    $calculator = new ShippingCalculator(new DefaultShippingProvider());
+    $calculator = new ShippingCalculator(new DefaultShippingProvider);
     expect($calculator->calculate($cart))->toBe(0.0);
 });
 
@@ -42,7 +42,7 @@ test('shipping info includes VAT details', function () {
         taxZone: 'RO'
     );
 
-    $calculator = new ShippingCalculator(new DefaultShippingProvider());
+    $calculator = new ShippingCalculator(new DefaultShippingProvider);
     $info = $calculator->getShippingInfo($cart);
 
     expect($info)
@@ -59,7 +59,7 @@ test('respects VAT exemption for shipping', function () {
         vatExempt: true
     );
 
-    $calculator = new ShippingCalculator(new DefaultShippingProvider());
+    $calculator = new ShippingCalculator(new DefaultShippingProvider);
     $info = $calculator->getShippingInfo($cart);
 
     expect($info['vat_rate'])->toBe(0.0);
@@ -72,7 +72,7 @@ test('handles shipping with included VAT', function () {
         taxZone: 'RO'
     );
 
-    $provider = new DefaultShippingProvider();
+    $provider = new DefaultShippingProvider;
     $info = $provider->getRate($cart, 'express');
 
     expect($info['amount'])->toBe(15.99)

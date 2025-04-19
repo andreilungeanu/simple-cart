@@ -24,6 +24,7 @@ class TaxCalculator implements Calculator
                 $this->provider->getRate($cart);
 
             $itemTax = $item->price * $item->quantity * ($rate ?? $this->provider->getRate($cart));
+
             return $itemTax;
         }), 2);
     }

@@ -28,7 +28,7 @@ class DefaultShippingProvider implements ShippingRateProvider
     public function getAvailableMethods(CartDTO $cart): array
     {
         return collect(config('simple-cart.shipping.settings.methods'))
-            ->map(fn($method, $key) => [
+            ->map(fn ($method, $key) => [
                 'name' => $method['name'],
                 'vat_rate' => null,
                 'vat_included' => false,

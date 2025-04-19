@@ -30,8 +30,8 @@ class DiscountCalculator implements Calculator
         // Calculate percentage after fixed discounts
         $subtotal = $cart->getSubtotal();
         $fixedDiscounts = $cart->getDiscounts()
-            ->filter(fn($d) => $d->type === 'fixed')
-            ->sum(fn($d) => $d->value);
+            ->filter(fn ($d) => $d->type === 'fixed')
+            ->sum(fn ($d) => $d->value);
 
         return (($subtotal - $fixedDiscounts) * $discount->value) / 100;
     }

@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Listeners;
 
+use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
-use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use Illuminate\Events\Dispatcher;
 
 class CartEventSubscriber

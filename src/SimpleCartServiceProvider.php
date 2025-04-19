@@ -2,17 +2,16 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
-
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
+use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Listeners\CartEventSubscriber;
 use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
 use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository;
-use AndreiLungeanu\SimpleCart\Listeners\CartEventSubscriber;
 use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
-use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
 use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class SimpleCartServiceProvider extends PackageServiceProvider
 {
