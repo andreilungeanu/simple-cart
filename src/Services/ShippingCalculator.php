@@ -14,27 +14,25 @@ class ShippingCalculator implements Calculator
 
     public function calculate(CartDTO $cart): float
     {
-        if (! $cart->getShippingMethod()) {
+        if (!$cart->getShippingMethod()) {
             return 0.0;
         }
 
-        $rateInfo = $this->provider->getRate($cart, $cart->getShippingMethod());
-
-        return $rateInfo['amount'];
-    }
-
-    public function getAvailableMethods(CartDTO $cart): array
-    {
-        return $this->provider->getAvailableMethods($cart);
+        $info = $this->provider->getRate($cart, $cart->getShippingMethod());
+        return $info['amount'];
     }
 
     public function getShippingInfo(CartDTO $cart): ?array
     {
-        if (! $cart->getShippingMethod()) {
+        if (!$cart->getShippingMethod()) {
             return null;
         }
 
         $info = $this->provider->getRate($cart, $cart->getShippingMethod());
+
+        if ($info['vat_rate'] !== null && ($info['vat_rate'] < 0 || $info['vat_rate'] > 1)) {
+            throw new \InvalidArgumentException('VAT rate must be between 0 and 1');
+        }
 
         if ($cart->isVatExempt()) {
             $info['vat_rate'] = 0.0;
