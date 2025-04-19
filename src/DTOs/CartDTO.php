@@ -2,7 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\DTOs;
 
+use Illuminate\Support\Number;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\TaxCalculator;
 use AndreiLungeanu\SimpleCart\Services\DiscountCalculator;
@@ -14,10 +16,6 @@ class CartDTO
     protected Collection $discounts;
     protected Collection $notes;
     protected Collection $extraCosts;
-
-    private float $calculatedTax = 0.0;
-    private float $calculatedShipping = 0.0;
-    private float $calculatedDiscount = 0.0;
 
     private ?float $shippingVatRate = null;
     private bool $shippingVatIncluded = false;
@@ -105,17 +103,14 @@ class CartDTO
         return $this->items->isEmpty();
     }
 
-    private function round(float $amount): float
-    {
-        return round($amount, 2);
-    }
-
     public function getSubtotal(): float
     {
-        return $this->round(
+        return round(
             $this->items->sum(
-                fn($item) => $item->price * $item->quantity
-            )
+                fn($item) =>
+                round($item->price * $item->quantity, 2)
+            ),
+            2
         );
     }
 
@@ -135,45 +130,68 @@ class CartDTO
 
     public function getTaxAmount(): float
     {
-        if ($this->calculatedTax === 0.0) {
-            $this->calculatedTax = app(TaxCalculator::class)->calculate($this);
+        if ($this->isVatExempt()) {
+            return 0.0;
         }
-        return $this->round($this->calculatedTax);
+
+        // Item taxes
+        $itemsTax = app(TaxCalculator::class)->calculate($this);
+
+        // Shipping tax
+        $shippingTax = 0.0;
+        if ($this->currentShippingMethod && !$this->shippingVatIncluded) {
+            $shippingTax = round(
+                $this->getShippingAmount() *
+                    ($this->shippingVatRate ?? $this->defaultVatRate()),
+                2
+            );
+        }
+
+        // Extra costs tax
+        $extraCostsTax = round($this->getExtraCostsTotal() * $this->defaultVatRate(), 2);
+
+        return round($itemsTax + $shippingTax + $extraCostsTax, 2);
     }
 
     public function getShippingAmount(): float
     {
-        if ($this->calculatedShipping === 0.0) {
-            $this->calculatedShipping = app(ShippingCalculator::class)->calculate($this);
-        }
-        return $this->calculatedShipping;
+        return app(ShippingCalculator::class)->calculate($this);
     }
 
     public function getDiscountAmount(): float
     {
-        if ($this->calculatedDiscount === 0.0) {
-            $this->calculatedDiscount = app(DiscountCalculator::class)->calculate($this);
-        }
-        return $this->calculatedDiscount;
+        return app(DiscountCalculator::class)->calculate($this);
     }
 
     public function calculateTotal(): float
     {
-        return $this->getSubtotal() +
-            $this->getShippingAmount() +
-            $this->getTaxAmount() +
-            $this->getExtraCostsTotal() -
-            $this->getDiscountAmount();
+        $subtotal = $this->getSubtotal();
+        $shipping = $this->getShippingAmount();
+        $tax = $this->getTaxAmount();
+        $extras = $this->getExtraCostsTotal();
+        $discounts = $this->getDiscountAmount();
+
+        return round($subtotal + $shipping + $tax + $extras - $discounts, 2);
     }
 
     private function calculateExtraCosts(): float
     {
-        return $this->extraCosts->sum(function (ExtraCostDTO $cost) {
+        return round($this->extraCosts->sum(function (ExtraCostDTO $cost) {
             if ($cost->type === 'percentage') {
-                return ($this->getSubtotal() * $cost->amount) / 100;
+                return round(($this->getSubtotal() * $cost->amount) / 100, 2);
             }
             return $cost->amount;
-        });
+        }), 2);
+    }
+
+    private function calculateExtraCostsVat(): float
+    {
+        if ($this->isVatExempt()) {
+            return 0.0;
+        }
+
+        $rate = $this->defaultVatRate();
+        return round($this->getExtraCostsTotal() * $rate, 2);
     }
 
     public function getExtraCostsTotal(): float
@@ -183,9 +201,15 @@ class CartDTO
 
     public function setShippingMethod(string $method, array $shippingInfo): void
     {
+        if (($shippingInfo['vat_rate'] ?? null) !== null) {
+            if ($shippingInfo['vat_rate'] < 0 || $shippingInfo['vat_rate'] > 1) {
+                throw new \InvalidArgumentException('Invalid VAT rate');
+            }
+        }
+
         $this->currentShippingMethod = $method;
-        $this->shippingVatRate = $shippingInfo['vat_rate'];
-        $this->shippingVatIncluded = $shippingInfo['vat_included'];
+        $this->shippingVatRate = $shippingInfo['vat_rate'] ?? null;
+        $this->shippingVatIncluded = $shippingInfo['vat_included'] ?? false;
     }
 
     public function getShippingMethod(): ?string
@@ -219,9 +243,6 @@ class CartDTO
     public function setVatExempt(bool $exempt = true): void
     {
         $this->vatExempt = $exempt;
-        // Reset cached calculations when VAT status changes
-        $this->calculatedTax = 0.0;
-        $this->calculatedShipping = 0.0;
     }
 
     public function isVatExempt(): bool
