@@ -21,7 +21,7 @@ test('applies shipping charge when below threshold', function () {
     $cart->setShippingMethod('standard', [
         'amount' => 5.99,
         'vat_included' => false,
-        'vat_rate' => null
+        'vat_rate' => null,
     ]);
 
     expect($cart->getShippingAmount())->toBe(5.99);
@@ -39,7 +39,7 @@ test('applies free shipping at threshold', function () {
     $cart->setShippingMethod('standard', [
         'amount' => 5.99,
         'vat_included' => false,
-        'vat_rate' => null
+        'vat_rate' => null,
     ]);
 
     expect($cart->getShippingAmount())->toBe(0.00);
@@ -59,7 +59,7 @@ test('respects custom shipping threshold', function () {
     $cart->setShippingMethod('standard', [
         'amount' => 5.99,
         'vat_included' => false,
-        'vat_rate' => null
+        'vat_rate' => null,
     ]);
 
     expect($cart->getShippingAmount())->toBe(5.99);
@@ -80,7 +80,7 @@ test('handles empty cart with shipping costs', function () {
     $cart->setShippingMethod('standard', [
         'amount' => 5.99,
         'vat_included' => false,
-        'vat_rate' => null
+        'vat_rate' => null,
     ]);
 
     expect($cart->getShippingAmount())->toBe(5.99)
@@ -99,7 +99,7 @@ test('handles shipping with included VAT', function () {
     $cart->setShippingMethod('express', [
         'amount' => 15.99,
         'vat_included' => true,
-        'vat_rate' => 0.19
+        'vat_rate' => 0.19,
     ]);
 
     expect($cart->getShippingAmount())->toBe(15.99)
@@ -118,7 +118,7 @@ test('handles VAT exemption with shipping', function () {
     $cart->setShippingMethod('standard', [
         'amount' => 5.99,
         'vat_included' => false,
-        'vat_rate' => null
+        'vat_rate' => null,
     ]);
 
     expect($cart->getShippingAmount())->toBe(5.99)

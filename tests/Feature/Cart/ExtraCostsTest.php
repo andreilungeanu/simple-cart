@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Cart;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 test('can add extra costs to cart', function () {
     $cart = app(SimpleCart::class)

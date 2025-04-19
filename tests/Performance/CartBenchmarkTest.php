@@ -2,11 +2,11 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Performance;
 
+use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
 use Illuminate\Support\Benchmark;
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 
 class CartBenchmarkTest extends TestCase
 {
@@ -105,7 +105,7 @@ test('large cart calculation performance', function () {
     // Add 100 items
     for ($i = 0; $i < 100; $i++) {
         $cart->addItem(new CartItemDTO(
-            id: (string)$i,
+            id: (string) $i,
             name: "Product $i",
             price: 99.99,
             quantity: rand(1, 5),
@@ -126,7 +126,7 @@ test('cart serialization performance', function () {
     // Add items with all features
     for ($i = 0; $i < 50; $i++) {
         $cart->addItem(new CartItemDTO(
-            id: (string)$i,
+            id: (string) $i,
             name: "Product $i",
             price: 99.99,
             quantity: 1,
