@@ -130,14 +130,14 @@ test('handles complex cart calculations correctly', function () {
     ));
 
     expect($cart->getSubtotal())->toBe(1100.00)
-        ->and($cart->getTaxAmount())->toBe(195.00)
-        ->and($cart->calculateTotal())->toBe(1300.00);
+        ->and($cart->getTaxAmount())->toBe(195.95)
+        ->and($cart->calculateTotal())->toBe(1300.95);
 });
 
 test('throws exception when adding invalid quantity', function () {
     $cart = new CartDTO;
 
-    expect(fn () => $cart->updateItemQuantity('1', -1))
+    expect(fn() => $cart->updateItemQuantity('1', -1))
         ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 });
 
