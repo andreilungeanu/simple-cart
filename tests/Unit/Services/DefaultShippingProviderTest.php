@@ -2,12 +2,12 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 
 test('shipping rate includes VAT information', function () {
-    $provider = new DefaultShippingProvider();
+    $provider = new DefaultShippingProvider;
     $cart = new CartDTO(
         items: [
             new CartItemDTO(
@@ -15,7 +15,7 @@ test('shipping rate includes VAT information', function () {
                 name: 'Test Product',
                 price: 50.00,
                 quantity: 1
-            )
+            ),
         ]
     );
 
@@ -29,8 +29,8 @@ test('shipping rate includes VAT information', function () {
 });
 
 test('returns null VAT rate for default shipping methods', function () {
-    $provider = new DefaultShippingProvider();
-    $cart = new CartDTO();
+    $provider = new DefaultShippingProvider;
+    $cart = new CartDTO;
 
     $methods = $provider->getAvailableMethods($cart);
 

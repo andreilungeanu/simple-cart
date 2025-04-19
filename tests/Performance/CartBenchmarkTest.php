@@ -2,20 +2,20 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Performance;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
 use Illuminate\Support\Benchmark;
 
 class CartBenchmarkTest extends TestCase
 {
-    public function testCartPerformance()
+    public function test_cart_performance()
     {
         $result = Benchmark::measure(
             [
-                'Adding 100 Items' => fn() => $this->benchmarkAddItems(100),
-                'Calculating Total with Discounts' => fn() => $this->benchmarkCalculateTotal(),
-                'Persistence Operations' => fn() => $this->benchmarkPersistence(),
+                'Adding 100 Items' => fn () => $this->benchmarkAddItems(100),
+                'Calculating Total with Discounts' => fn () => $this->benchmarkCalculateTotal(),
+                'Persistence Operations' => fn () => $this->benchmarkPersistence(),
             ],
             1000
         );
@@ -82,7 +82,7 @@ test('cart operations remain performant with many items', function () {
     // Add 100 items
     for ($i = 0; $i < 100; $i++) {
         $cart->addItem(new CartItemDTO(
-            id: (string)$i,
+            id: (string) $i,
             name: "Product $i",
             price: 9.99,
             quantity: 1,

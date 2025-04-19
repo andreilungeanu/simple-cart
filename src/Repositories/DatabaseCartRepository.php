@@ -13,7 +13,7 @@ class DatabaseCartRepository implements CartRepository
     {
         $cart = Cart::find($id);
 
-        if (!$cart) {
+        if (! $cart) {
             return null;
         }
 
@@ -25,7 +25,7 @@ class DatabaseCartRepository implements CartRepository
 
         // Convert items to DTOs
         $items = collect($items)
-            ->map(fn($item) => new CartItemDTO(
+            ->map(fn ($item) => new CartItemDTO(
                 id: $item['id'],
                 name: $item['name'],
                 price: $item['price'],
@@ -82,7 +82,7 @@ class DatabaseCartRepository implements CartRepository
     {
         return Cart::where('user_id', $userId)
             ->get()
-            ->map(fn($cart) => new CartDTO(
+            ->map(fn ($cart) => new CartDTO(
                 id: $cart->id,
                 items: $cart->items ?? [],
                 userId: $cart->user_id,

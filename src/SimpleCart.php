@@ -4,9 +4,9 @@ namespace AndreiLungeanu\SimpleCart;
 
 use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
-use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ class SimpleCart
 
     public function create(): static
     {
-        $this->cart = new CartDTO();
+        $this->cart = new CartDTO;
         event(new CartCreated($this->cart));
 
         return $this;
@@ -29,7 +29,7 @@ class SimpleCart
 
     public function addItem(CartItemDTO $item): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             $this->create();
         }
 
@@ -48,7 +48,7 @@ class SimpleCart
     public function clear(): static
     {
         $this->cart = null;
-        event(new CartCleared());
+        event(new CartCleared);
 
         return $this;
     }
@@ -60,7 +60,7 @@ class SimpleCart
 
     public function updateQuantity(string $itemId, int $quantity): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             throw new CartException('Cart not found');
         }
 
@@ -72,7 +72,7 @@ class SimpleCart
 
     public function applyDiscount(string $code): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             throw new CartException('Cart not found');
         }
 
@@ -84,7 +84,7 @@ class SimpleCart
 
     public function addNote(string $note): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             throw new CartException('Cart not found');
         }
 
@@ -96,11 +96,11 @@ class SimpleCart
 
     public function save(): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             throw new CartException('Cart not found');
         }
 
-        if (!$this->cart->id) {
+        if (! $this->cart->id) {
             $this->cart = new CartDTO(
                 id: (string) Str::uuid(),
                 items: $this->cart->getItems()->toArray(),
@@ -114,18 +114,20 @@ class SimpleCart
         }
 
         $id = $this->repository->save($this->cart);
+
         return $this;
     }
 
     public function find(string $id): static
     {
         $this->cart = $this->repository->find($id);
+
         return $this;
     }
 
     public function total(): float
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             return 0.0;
         }
 
@@ -134,7 +136,7 @@ class SimpleCart
 
     public function clone(): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             throw CartException::cartNotFound();
         }
 
@@ -146,12 +148,13 @@ class SimpleCart
         );
 
         $this->cart = $newCart;
+
         return $this;
     }
 
     public function merge(CartDTO $otherCart): static
     {
-        if (!$this->cart) {
+        if (! $this->cart) {
             $this->create();
         }
 
@@ -164,11 +167,12 @@ class SimpleCart
         }
 
         event(new CartUpdated($this->cart));
+
         return $this;
     }
 
     protected function findItem(string $itemId): ?CartItemDTO
     {
-        return $this->cart?->getItems()->first(fn($item) => $item->id === $itemId);
+        return $this->cart?->getItems()->first(fn ($item) => $item->id === $itemId);
     }
 }
