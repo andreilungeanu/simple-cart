@@ -15,6 +15,6 @@ readonly class ExtraCostDTO
 
     public function shouldCalculateVat(): bool
     {
-        return !$this->vatIncluded && $this->vatRate !== null;
+        return ! $this->vatIncluded && $this->vatRate !== null;
     }
 }
