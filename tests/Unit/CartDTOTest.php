@@ -137,7 +137,7 @@ test('handles complex cart calculations correctly', function () {
 test('throws exception when adding invalid quantity', function () {
     $cart = new CartDTO;
 
-    expect(fn() => $cart->updateItemQuantity('1', -1))
+    expect(fn () => $cart->updateItemQuantity('1', -1))
         ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 });
 
