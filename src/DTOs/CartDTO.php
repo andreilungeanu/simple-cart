@@ -197,14 +197,14 @@ class CartDTO
 
     public function setShippingMethod(string $method, array $shippingInfo): void
     {
-        if (isset($shippingInfo['vat_rate']) && $shippingInfo['vat_rate'] !== null) {
+        if (array_key_exists('vat_rate', $shippingInfo) && is_numeric($shippingInfo['vat_rate'])) {
             if ($shippingInfo['vat_rate'] < 0 || $shippingInfo['vat_rate'] > 1) {
                 throw new \InvalidArgumentException('VAT rate must be between 0 and 1');
             }
         }
 
         $this->currentShippingMethod = $method;
-        $this->shippingVatRate = $shippingInfo['vat_rate'];
+        $this->shippingVatRate = $shippingInfo['vat_rate'] ?? null;
         $this->shippingVatIncluded = $shippingInfo['vat_included'] ?? false;
     }
 
