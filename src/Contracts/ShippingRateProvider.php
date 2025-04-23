@@ -2,11 +2,13 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
 
 interface ShippingRateProvider
 {
-    public function getRate(CartDTO $cart, string $method): array;
+    // Change type hint from CartDTO to SimpleCart
+    public function getRate(SimpleCart $cart, string $method): array;
 
-    public function getAvailableMethods(CartDTO $cart): array;
+    // Change type hint from CartDTO to SimpleCart
+    public function getAvailableMethods(SimpleCart $cart): array;
 }

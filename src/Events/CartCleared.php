@@ -9,5 +9,8 @@ class CartCleared
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct() {}
+    // Add cartId property
+    public function __construct(
+        public readonly string $cartId
+    ) {}
 }

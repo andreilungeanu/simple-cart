@@ -2,11 +2,12 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
 
 interface TaxRateProvider
 {
-    public function getRate(CartDTO $cart): float;
+    // Change type hint from CartDTO to SimpleCart
+    public function getRate(SimpleCart $cart): float;
 
     public function getRateForCategory(string $zone, string $category): ?float;
 
