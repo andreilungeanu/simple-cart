@@ -7,7 +7,7 @@ readonly class ExtraCostDTO
     public function __construct(
         public string $name,
         public float $amount,
-        public string $type = 'fixed', // fixed or percentage
+        public string $type = 'fixed',
         public ?string $description = null,
         public ?float $vatRate = null,
         public bool $vatIncluded = false,
@@ -31,7 +31,6 @@ readonly class ExtraCostDTO
             throw new \InvalidArgumentException('Extra cost array must contain name, amount, and type.');
         }
 
-        // Basic validation (can be expanded)
         if (!in_array($data['type'], ['fixed', 'percentage'])) {
             throw new \InvalidArgumentException('Invalid extra cost type.');
         }
@@ -41,10 +40,10 @@ readonly class ExtraCostDTO
 
         return new self(
             name: $data['name'],
-            amount: (float) $data['amount'], // Ensure float
+            amount: (float) $data['amount'],
             type: $data['type'],
             description: $data['description'] ?? null,
-            vatRate: isset($data['vatRate']) ? (float) $data['vatRate'] : null, // Ensure float if set
+            vatRate: isset($data['vatRate']) ? (float) $data['vatRate'] : null,
             vatIncluded: $data['vatIncluded'] ?? false,
         );
     }

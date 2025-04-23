@@ -13,10 +13,8 @@ class CartCalculator
         protected ShippingCalculator $shippingCalculator,
         protected TaxCalculator $taxCalculator,
         protected DiscountCalculator $discountCalculator,
-        protected TaxRateProvider $taxRateProvider // Needed for defaultVatRate
+        protected TaxRateProvider $taxRateProvider
     ) {}
-
-    // --- Calculation methods moved from SimpleCart ---
 
     private function round(float $amount): float
     {
@@ -37,23 +35,18 @@ class CartCalculator
         return $cart->getItems()->sum(fn(CartItemDTO $item) => $item->quantity);
     }
 
-    // Note: getShippingCost was identical to getShippingAmount, removed duplication
     public function getShippingAmount(SimpleCart $cart): float
     {
-        // Delegate to the injected ShippingCalculator
         return $this->shippingCalculator->calculate($cart);
     }
 
     public function getTaxAmount(SimpleCart $cart): float
     {
-        // Delegate to the injected TaxCalculator for item tax
-        // Keep shipping and extra cost tax calculation here for now, or move to TaxCalculator?
-        // Let's keep it here for now as it depends on other calculated values.
         if ($cart->isVatExempt()) {
             return 0.0;
         }
 
-        $itemsTax = $this->taxCalculator->calculate($cart); // Delegate item tax calculation
+        $itemsTax = $this->taxCalculator->calculate($cart);
         $shippingTax = $cart->getShippingMethod() && !$cart->getShippingVatInfo()['included']
             ? $this->calculateShippingVat($cart)
             : 0.0;
@@ -64,13 +57,11 @@ class CartCalculator
 
     public function getDiscountAmount(SimpleCart $cart): float
     {
-        // Delegate to the injected DiscountCalculator
         return $this->discountCalculator->calculate($cart);
     }
 
     public function getTotal(SimpleCart $cart): float
     {
-        // Calculate total using methods within this service
         return $this->round(
             $this->getSubtotal($cart) +
                 $this->getShippingAmount($cart) +
@@ -84,7 +75,6 @@ class CartCalculator
     {
         return $cart->getExtraCosts()->sum(function (ExtraCostDTO $cost) use ($cart) {
             if ($cost->type === 'percentage') {
-                // Use $this->getSubtotal()
                 return ($this->getSubtotal($cart) * $cost->amount) / 100;
             }
             return $cost->amount;
@@ -117,7 +107,6 @@ class CartCalculator
 
     protected function defaultVatRate(SimpleCart $cart): float
     {
-        // Delegate to the injected TaxRateProvider
         return $this->taxRateProvider->getRate($cart);
     }
 }

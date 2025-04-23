@@ -46,12 +46,11 @@ readonly class CartItemDTO
             throw new \InvalidArgumentException('Item array must contain id, name, price, and quantity.');
         }
 
-        // Use constructor which already contains validation
         return new self(
             id: $data['id'],
             name: $data['name'],
-            price: (float) $data['price'], // Ensure float type
-            quantity: (int) $data['quantity'], // Ensure int type
+            price: (float) $data['price'],
+            quantity: (int) $data['quantity'],
             category: $data['category'] ?? null,
             metadata: $data['metadata'] ?? [],
         );

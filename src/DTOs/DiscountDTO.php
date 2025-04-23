@@ -6,13 +6,12 @@ readonly class DiscountDTO
 {
     public function __construct(
         public string $code,
-        public string $type = 'fixed', // fixed, percentage, shipping
+        public string $type = 'fixed',
         public float $value = 0,
-        public ?string $appliesTo = null, // null means all items
+        public ?string $appliesTo = null,
         public ?string $minimumAmount = null,
         public ?string $expiresAt = null,
     ) {
-        // Basic validation (can be expanded)
         if (!in_array($this->type, ['fixed', 'percentage', 'shipping'])) {
             throw new \InvalidArgumentException('Invalid discount type.');
         }
@@ -34,11 +33,10 @@ readonly class DiscountDTO
             throw new \InvalidArgumentException('Discount array must contain code, type, and value.');
         }
 
-        // Use constructor which already contains validation
         return new self(
             code: $data['code'],
             type: $data['type'],
-            value: (float) $data['value'], // Ensure float
+            value: (float) $data['value'],
             appliesTo: $data['appliesTo'] ?? null,
             minimumAmount: $data['minimumAmount'] ?? null,
             expiresAt: $data['expiresAt'] ?? null,

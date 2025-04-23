@@ -3,14 +3,12 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
-use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 class DefaultTaxProvider implements TaxRateProvider
 {
-    // Change type hint from CartDTO to SimpleCart
     public function getRate(SimpleCart $cart): float
     {
-        // Access public property taxZone directly
         if (! $cart->taxZone) {
             return 0.0;
         }
@@ -44,10 +42,8 @@ class DefaultTaxProvider implements TaxRateProvider
         return $zoneConfig['apply_to_shipping'] ?? false;
     }
 
-    // Also update this method signature for consistency, though it's protected
     protected function calculate(SimpleCart $cart, float $rate): float
     {
-        // Call getSubtotal method on SimpleCart
         return $cart->getSubtotal() * $rate;
     }
 }

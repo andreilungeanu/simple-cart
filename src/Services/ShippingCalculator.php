@@ -4,7 +4,7 @@ namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Contracts\Calculator;
 use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
-use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 class ShippingCalculator implements Calculator
 {
@@ -12,7 +12,6 @@ class ShippingCalculator implements Calculator
         protected ShippingRateProvider $provider
     ) {}
 
-    // Change type hint from CartDTO to SimpleCart
     public function calculate(SimpleCart $cart): float
     {
         if (! $cart->getShippingMethod()) {
@@ -24,7 +23,6 @@ class ShippingCalculator implements Calculator
         return $info['amount'];
     }
 
-    // Change type hint from CartDTO to SimpleCart
     public function getShippingInfo(SimpleCart $cart): ?array
     {
         if (! $cart->getShippingMethod()) {
