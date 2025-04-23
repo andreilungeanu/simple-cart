@@ -2,14 +2,16 @@
 
 namespace AndreiLungeanu\SimpleCart\Repositories;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+// Remove DTO imports if no longer needed directly here
+// use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
+// use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Models\Cart;
 use Illuminate\Support\Str;
 
 class DatabaseCartRepository implements CartRepository
 {
-    public function find(string $id): ?CartDTO
+    // Change return type hint
+    public function find(string $id): ?array
     {
         $cart = Cart::find($id);
 
@@ -17,58 +19,50 @@ class DatabaseCartRepository implements CartRepository
             return null;
         }
 
-        // Handle JSON data properly
-        $items = is_string($cart->items) ? json_decode($cart->items, true) : ($cart->items ?? []);
-        $discounts = is_string($cart->discounts) ? json_decode($cart->discounts, true) : ($cart->discounts ?? []);
-        $notes = is_string($cart->notes) ? json_decode($cart->notes, true) : ($cart->notes ?? []);
-        $extraCosts = is_string($cart->extra_costs) ? json_decode($cart->extra_costs, true) : ($cart->extra_costs ?? []);
-
-        // Convert items to DTOs
-        $items = collect($items)
-            ->map(fn ($item) => new CartItemDTO(
-                id: $item['id'],
-                name: $item['name'],
-                price: $item['price'],
-                quantity: $item['quantity'],
-                category: $item['category'] ?? null,
-                metadata: $item['metadata'] ?? []
-            ))
-            ->toArray();
-
-        return new CartDTO(
-            id: $cart->id,
-            items: $items,
-            userId: $cart->user_id,
-            discounts: $discounts,
-            notes: $notes,
-            extraCosts: $extraCosts,
-            shippingMethod: $cart->shipping_method,
-            taxZone: $cart->tax_zone,
-        );
+        // Return raw data as an array
+        return [
+            'id' => $cart->id,
+            // Decode JSON fields, defaulting to empty arrays
+            'items' => is_string($cart->items) ? json_decode($cart->items, true) : ($cart->items ?? []),
+            'discounts' => is_string($cart->discounts) ? json_decode($cart->discounts, true) : ($cart->discounts ?? []),
+            'notes' => is_string($cart->notes) ? json_decode($cart->notes, true) : ($cart->notes ?? []),
+            'extra_costs' => is_string($cart->extra_costs) ? json_decode($cart->extra_costs, true) : ($cart->extra_costs ?? []),
+            'user_id' => $cart->user_id,
+            'shipping_method' => $cart->shipping_method,
+            'tax_zone' => $cart->tax_zone,
+            // Include vat_exempt if stored, otherwise SimpleCart will handle it
+            // 'vat_exempt' => $cart->vat_exempt ?? false,
+        ];
     }
 
-    public function save(CartDTO $cart): string
+    // Change parameter type hint
+    public function save(array $cartData): string
     {
-        $id = $cart->id ?: (string) Str::uuid();
+        // Ensure ID exists
+        $id = $cartData['id'] ?? (string) Str::uuid();
 
-        $data = [
+        // Prepare data for saving, ensuring collections/DTO arrays are encoded
+        $dataToSave = [
             'id' => $id,
-            'items' => json_encode($cart->getItems()->toArray()),
-            'discounts' => json_encode($cart->getDiscounts()->toArray()),
-            'notes' => json_encode($cart->getNotes()->toArray()),
-            'extra_costs' => json_encode($cart->getExtraCosts()->toArray()),
-            'user_id' => $cart->userId,
-            'shipping_method' => $cart->getShippingMethod(),
-            'tax_zone' => $cart->taxZone,
-            'tax_amount' => $cart->getTaxAmount(),
-            'shipping_amount' => $cart->getShippingAmount(),
-            'discount_amount' => $cart->getDiscountAmount(),
-            'subtotal_amount' => $cart->getSubtotal(),
-            'total_amount' => $cart->calculateTotal(),
-
+            // Assume items, discounts etc. are passed as arrays ready for encoding
+            'items' => json_encode($cartData['items'] ?? []),
+            'discounts' => json_encode($cartData['discounts'] ?? []),
+            'notes' => json_encode($cartData['notes'] ?? []),
+            'extra_costs' => json_encode($cartData['extra_costs'] ?? []),
+            'user_id' => $cartData['user_id'] ?? null,
+            'shipping_method' => $cartData['shipping_method'] ?? null,
+            'tax_zone' => $cartData['tax_zone'] ?? null,
+            // 'vat_exempt' => $cartData['vat_exempt'] ?? false, // Only if storing this flag
+            // Remove calculated amounts - should be calculated on demand
+            // 'tax_amount' => ...,
+            // 'shipping_amount' => ...,
+            // 'discount_amount' => ...,
+            // 'subtotal_amount' => ...,
+            // 'total_amount' => ...,
         ];
 
-        Cart::updateOrCreate(['id' => $id], $data);
+        // Use updateOrCreate to handle both inserts and updates
+        Cart::updateOrCreate(['id' => $id], $dataToSave);
 
         return $id;
     }
@@ -82,16 +76,18 @@ class DatabaseCartRepository implements CartRepository
     {
         return Cart::where('user_id', $userId)
             ->get()
-            ->map(fn ($cart) => new CartDTO(
-                id: $cart->id,
-                items: $cart->items ?? [],
-                userId: $cart->user_id,
-                discounts: $cart->discounts ?? [],
-                notes: $cart->notes ?? [],
-                extraCosts: $cart->extra_costs ?? [],
-                shippingMethod: $cart->shipping_method,
-                taxZone: $cart->tax_zone,
-            ))
+            // Map to array instead of DTO
+            ->map(fn(Cart $cart) => [
+                'id' => $cart->id,
+                'items' => is_string($cart->items) ? json_decode($cart->items, true) : ($cart->items ?? []),
+                'user_id' => $cart->user_id,
+                'discounts' => is_string($cart->discounts) ? json_decode($cart->discounts, true) : ($cart->discounts ?? []),
+                'notes' => is_string($cart->notes) ? json_decode($cart->notes, true) : ($cart->notes ?? []),
+                'extra_costs' => is_string($cart->extra_costs) ? json_decode($cart->extra_costs, true) : ($cart->extra_costs ?? []),
+                'shipping_method' => $cart->shipping_method,
+                'tax_zone' => $cart->tax_zone,
+                // 'vat_exempt' => $cart->vat_exempt ?? false,
+            ])
             ->toArray();
     }
 }

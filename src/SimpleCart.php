@@ -2,8 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
+// Remove CartDTO import - no longer needed here
+// use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO; // Re-add CartDTO import
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
@@ -12,9 +13,8 @@ use AndreiLungeanu\SimpleCart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
-use AndreiLungeanu\SimpleCart\Services\DiscountCalculator;
-use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
-use AndreiLungeanu\SimpleCart\Services\TaxCalculator;
+use AndreiLungeanu\SimpleCart\Services\CartCalculator; // Import CartCalculator
+use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction; // Import Action
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -34,8 +34,11 @@ class SimpleCart
     protected ?string $currentShippingMethod = null;
     // End properties moved from CartDTO
 
+    // Inject CartCalculator and Actions
     public function __construct(
         protected readonly CartRepository $repository,
+        protected readonly CartCalculator $calculator,
+        protected readonly AddItemToCartAction $addItemAction, // Inject Action
         // Initialize properties in constructor
         string $id = '',
         ?string $userId = null,
@@ -83,13 +86,11 @@ class SimpleCart
         return $this;
     }
 
+    // Delegate to AddItemToCartAction
     public function addItem(CartItemDTO $item): static
     {
-        // No need to check for cart existence, state is inherent
-        $this->items->push($item);
-        event(new CartUpdated($this)); // Pass $this
-
-        return $this;
+        $this->addItemAction->execute($this, $item);
+        return $this; // Action returns $this, but keep fluent chain here
     }
 
     public function removeItem(string $itemId): static
@@ -206,61 +207,85 @@ class SimpleCart
             $this->id = (string) Str::uuid();
         }
 
-        // Construct a DTO for repository interaction (temporary)
-        // Need to import CartDTO again for this
-        $cartDTO = new \AndreiLungeanu\SimpleCart\DTOs\CartDTO(
-            id: $this->id,
-            items: $this->items->toArray(), // Pass raw array if DTO constructor expects it
-            userId: $this->userId,
-            discounts: $this->discounts->toArray(),
-            notes: $this->notes->toArray(),
-            extraCosts: $this->extraCosts->toArray(),
-            shippingMethod: $this->currentShippingMethod,
-            taxZone: $this->taxZone,
-            vatExempt: $this->vatExempt,
-        );
+        // Construct data array for repository
+        $cartData = [
+            'id' => $this->id,
+            // Use the mapping logic from get() to ensure correct array structure for DTOs
+            'items' => $this->items->map(fn(CartItemDTO $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'price' => $item->price,
+                'quantity' => $item->quantity,
+                'category' => $item->category,
+                'metadata' => $item->metadata,
+            ])->toArray(),
+            'discounts' => $this->discounts->map(fn(DiscountDTO $discount) => [
+                'code' => $discount->code,
+                'type' => $discount->type,
+                'value' => $discount->value,
+                'appliesTo' => $discount->appliesTo,
+                'minimumAmount' => $discount->minimumAmount,
+                'expiresAt' => $discount->expiresAt,
+            ])->toArray(),
+            'notes' => $this->notes->toArray(),
+            'extra_costs' => $this->extraCosts->map(fn(ExtraCostDTO $cost) => [
+                'name' => $cost->name,
+                'amount' => $cost->amount,
+                'type' => $cost->type,
+                'description' => $cost->description,
+                'vatRate' => $cost->vatRate,
+                'vatIncluded' => $cost->vatIncluded,
+            ])->toArray(),
+            'user_id' => $this->userId,
+            'shipping_method' => $this->currentShippingMethod,
+            'tax_zone' => $this->taxZone,
+            'vat_exempt' => $this->vatExempt, // Pass vat_exempt status
+        ];
 
-        $savedId = $this->repository->save($cartDTO);
+        $savedId = $this->repository->save($cartData);
         // Optionally update $this->id if repository returns a potentially different ID
         // $this->id = $savedId;
 
-        return $this;
+        return $this; // Return $this for fluent interface
     }
 
     public function find(string $id): static
     {
-        // Need CartDTO import here too
-        $foundCartDTO = $this->repository->find($id);
+        // Repository now returns an array or null
+        $foundCartData = $this->repository->find($id);
 
-        if (! $foundCartDTO) {
-            // Handle not found case - maybe throw exception or return $this in empty state?
-            // Let's reset to empty state for now
+        if (! $foundCartData) {
+            // Handle not found case
             $this->create(); // Reset to empty state
-            $this->id = $id; // Keep the ID we searched for? Or clear it?
-            throw new CartException("Cart with ID {$id} not found."); // Or throw
-            // return $this;
+            $this->id = $id; // Keep the ID we searched for?
+            throw new CartException("Cart with ID {$id} not found.");
+            // return $this; // Or return empty state
         }
 
-        // Populate $this properties from the found DTO
-        $this->id = $foundCartDTO->id;
-        $this->userId = $foundCartDTO->userId;
-        $this->taxZone = $foundCartDTO->taxZone;
-        $this->items = $foundCartDTO->getItems(); // Assuming getItems returns Collection<CartItemDTO>
-        $this->discounts = $foundCartDTO->getDiscounts(); // Assuming getDiscounts returns Collection<DiscountDTO>
-        $this->notes = $foundCartDTO->getNotes();
-        $this->extraCosts = $foundCartDTO->getExtraCosts(); // Assuming getExtraCosts returns Collection<ExtraCostDTO>
-        $this->currentShippingMethod = $foundCartDTO->getShippingMethod();
-        $this->vatExempt = $foundCartDTO->isVatExempt();
-        // Note: shippingVatRate and shippingVatIncluded are not in CartDTO constructor/toArray, need to handle if needed
+        // Populate $this properties from the found array
+        $this->id = $foundCartData['id'];
+        $this->userId = $foundCartData['user_id'] ?? null;
+        $this->taxZone = $foundCartData['tax_zone'] ?? null;
+        $this->currentShippingMethod = $foundCartData['shipping_method'] ?? null;
+        $this->vatExempt = $foundCartData['vat_exempt'] ?? false; // Assuming repository returns this key
 
-        return $this;
+        // Convert arrays back to DTO collections (similar to constructor)
+        $this->items = collect($foundCartData['items'] ?? [])->map(fn($item) => $item instanceof CartItemDTO ? $item : new CartItemDTO(...$item));
+        $this->discounts = collect($foundCartData['discounts'] ?? [])->map(fn($discount) => $discount instanceof DiscountDTO ? $discount : new DiscountDTO(...$discount));
+        $this->notes = collect($foundCartData['notes'] ?? []);
+        $this->extraCosts = collect($foundCartData['extra_costs'] ?? [])->map(fn($cost) => $cost instanceof ExtraCostDTO ? $cost : new ExtraCostDTO(...$cost));
+
+        // Reset non-persistent state?
+        $this->shippingVatRate = null;
+        $this->shippingVatIncluded = false;
+
+        return $this; // Return $this for fluent interface
     }
 
+    // Delegate total calculation to the calculator service
     public function total(): float
     {
-        // Calculation logic will be moved here
-        // For now, placeholder call
-        return $this->calculateTotal();
+        return $this->calculator->getTotal($this);
     }
 
     public function clone(): static
@@ -268,6 +293,8 @@ class SimpleCart
         // Create a new instance state based on the current one, but with a new ID
         $clonedCart = new static(
             repository: $this->repository, // Keep the same repository
+            calculator: $this->calculator, // Add calculator instance
+            addItemAction: $this->addItemAction, // Add action instance
             id: (string) Str::uuid(), // Generate a new ID for the clone
             userId: $this->userId, // Keep user ID
             taxZone: $this->taxZone,
@@ -301,8 +328,8 @@ class SimpleCart
         return $this;
     }
 
-    // Keep CartDTO for signature for now, but logic uses $this
-    public function merge(CartDTO $otherCart): static
+    // Update merge signature to accept SimpleCart
+    public function merge(SimpleCart $otherCart): static
     {
         // No need to check for cart existence
 
@@ -331,7 +358,7 @@ class SimpleCart
         return $this;
     }
 
-    // --- Methods moved from CartDTO ---
+    // --- Methods to keep in SimpleCart (State modifiers, getters) ---
 
     public function addExtraCost(ExtraCostDTO $cost): static
     {
@@ -362,113 +389,47 @@ class SimpleCart
         return $this;
     }
 
-    // --- Calculation methods moved from CartDTO ---
-
-    private function round(float $amount): float
-    {
-        return round($amount, 2);
-    }
+    // --- Calculation methods delegated to CartCalculator ---
 
     public function getSubtotal(): float
     {
-        return $this->round(
-            $this->items->sum(
-                fn(CartItemDTO $item) => $item->price * $item->quantity // Added type hint
-            )
-        );
+        return $this->calculator->getSubtotal($this);
     }
 
     public function getItemCount(): int
     {
-        return $this->items->sum(fn(CartItemDTO $item) => $item->quantity); // Added type hint
+        return $this->calculator->getItemCount($this);
     }
 
-    public function getShippingCost(): float
+    // getShippingCost is removed as it was duplicate of getShippingAmount
+    public function getShippingAmount(): float
     {
-        if (! $this->currentShippingMethod) {
-            return 0.0;
-        }
-        // Pass $this instead of CartDTO instance
-        return app(ShippingCalculator::class)->calculate($this);
-    }
-
-    public function getShippingAmount(): float // Renamed from getShippingCost in DTO? Let's keep getShippingAmount
-    {
-        if (! $this->currentShippingMethod) {
-            return 0.0;
-        }
-        // Pass $this instead of CartDTO instance
-        return app(ShippingCalculator::class)->calculate($this);
+        return $this->calculator->getShippingAmount($this);
     }
 
     public function getTaxAmount(): float
     {
-        if ($this->isVatExempt()) {
-            return 0.0;
-        }
-
-        // Pass $this instead of CartDTO instance
-        $itemsTax = app(TaxCalculator::class)->calculate($this);
-        $shippingTax = $this->currentShippingMethod && ! $this->shippingVatIncluded
-            ? $this->calculateShippingVat()
-            : 0.0;
-        $extraCostsTax = $this->getExtraCostsTax();
-
-        return $this->round($itemsTax + $shippingTax + $extraCostsTax);
+        return $this->calculator->getTaxAmount($this);
     }
 
     public function getDiscountAmount(): float
     {
-        // Pass $this instead of CartDTO instance
-        return app(DiscountCalculator::class)->calculate($this);
+        return $this->calculator->getDiscountAmount($this);
     }
 
-    public function calculateTotal(): float // This now exists
+    public function getExtraCostsTotal(): float
     {
-        // Ensure all calculation methods use $this properties
-        return $this->round( // Added rounding to final total
-            $this->getSubtotal() +
-                $this->getShippingAmount() + // Use getShippingAmount
-                $this->getTaxAmount() +
-                $this->getExtraCostsTotal() -
-                $this->getDiscountAmount()
-        );
+        return $this->calculator->getExtraCostsTotal($this);
     }
 
-    private function calculateExtraCosts(): float
-    {
-        return $this->extraCosts->sum(function (ExtraCostDTO $cost) {
-            if ($cost->type === 'percentage') {
-                // Use $this->getSubtotal()
-                return ($this->getSubtotal() * $cost->amount) / 100;
-            }
+    // --- Getters for state needed by calculator/providers ---
 
-            return $cost->amount;
-        });
-    }
-
-    public function getExtraCostsTotal(): float // Made public as it's used in calculateTotal
-    {
-        return round($this->calculateExtraCosts(), 2);
-    }
-
-    private function getExtraCostsTax(): float
-    {
-        if ($this->isVatExempt()) {
-            return 0.0;
-        }
-
-        $rate = $this->defaultVatRate();
-        // Use getExtraCostsTotal()
-        return $this->round($this->getExtraCostsTotal() * $rate);
-    }
-
-    public function getShippingMethod(): ?string // Added getter
+    public function getShippingMethod(): ?string // Keep getter
     {
         return $this->currentShippingMethod;
     }
 
-    public function getShippingVatInfo(): array
+    public function getShippingVatInfo(): array // Keep getter
     {
         return [
             'rate' => $this->shippingVatRate,
@@ -476,30 +437,12 @@ class SimpleCart
         ];
     }
 
-    public function calculateShippingVat(): float
-    {
-        if ($this->isVatExempt() || ! $this->currentShippingMethod) {
-            return 0.0;
-        }
-
-        $rate = $this->shippingVatRate ?? $this->defaultVatRate();
-        // Use getShippingAmount()
-        return $this->round($this->getShippingAmount() * $rate);
-    }
-
-    protected function defaultVatRate(): float
-    {
-        // Pass $this instead of CartDTO instance
-        return app(TaxRateProvider::class)->getRate($this);
-    }
-
-    public function isVatExempt(): bool
+    public function isVatExempt(): bool // Keep getter
     {
         return $this->vatExempt;
     }
 
-    // --- End moved methods ---
-
+    // --- Basic Data Getters ---
 
     public function getItems(): Collection
     {
