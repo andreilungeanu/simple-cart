@@ -2,13 +2,16 @@
 
 namespace AndreiLungeanu\SimpleCart\Repositories;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
+// CartDTO is no longer needed here
+// use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 
 interface CartRepository
 {
-    public function find(string $id): ?CartDTO;
+    // Change return type to ?array
+    public function find(string $id): ?array;
 
-    public function save(CartDTO $cart): string;
+    // Change parameter type to array
+    public function save(array $cartData): string;
 
     public function delete(string $id): void;
 
