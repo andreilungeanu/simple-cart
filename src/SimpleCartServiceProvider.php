@@ -61,7 +61,7 @@ class SimpleCartServiceProvider extends PackageServiceProvider
             return new SimpleCart(
                 $app->make(CartRepository::class),
                 $app->make(CartCalculator::class),
-                $app->make(\AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction::class) // Inject Action
+                $app->make(\AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction::class) // Action has no deps now
             );
         });
     }

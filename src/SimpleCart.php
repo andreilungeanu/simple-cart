@@ -95,7 +95,15 @@ class SimpleCart
 
     public function removeItem(string $itemId): static
     {
-        // Implementation
+        $initialCount = $this->items->count();
+        // Filter the collection, keeping only items whose ID does *not* match
+        $this->items = $this->items->filter(fn(CartItemDTO $item) => $item->id !== $itemId);
+
+        // Only dispatch event if an item was actually removed
+        if ($this->items->count() < $initialCount) {
+            event(new CartUpdated($this));
+        }
+
         return $this;
     }
 
@@ -134,7 +142,7 @@ class SimpleCart
                 'quantity' => $item->quantity,
                 'category' => $item->category,
                 'metadata' => $item->metadata,
-            ])->toArray(),
+            ])->values()->toArray(), // Add values() to ensure sequential numeric keys
             'discounts' => $this->discounts->map(fn(DiscountDTO $discount) => [
                 'code' => $discount->code,
                 'type' => $discount->type,
@@ -243,8 +251,8 @@ class SimpleCart
         ];
 
         $savedId = $this->repository->save($cartData);
-        // Optionally update $this->id if repository returns a potentially different ID
-        // $this->id = $savedId;
+        // Update the instance ID with the ID returned from the save operation
+        $this->id = $savedId;
 
         return $this; // Return $this for fluent interface
     }
@@ -291,10 +299,11 @@ class SimpleCart
     public function clone(): static
     {
         // Create a new instance state based on the current one, but with a new ID
+        // AddItemToCartAction no longer needs Dispatcher
         $clonedCart = new static(
             repository: $this->repository, // Keep the same repository
             calculator: $this->calculator, // Add calculator instance
-            addItemAction: $this->addItemAction, // Add action instance
+            addItemAction: $this->addItemAction, // Add action instance (no deps needed)
             id: (string) Str::uuid(), // Generate a new ID for the clone
             userId: $this->userId, // Keep user ID
             taxZone: $this->taxZone,

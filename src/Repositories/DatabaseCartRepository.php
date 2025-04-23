@@ -64,6 +64,7 @@ class DatabaseCartRepository implements CartRepository
         // Use updateOrCreate to handle both inserts and updates
         Cart::updateOrCreate(['id' => $id], $dataToSave);
 
+        // Explicitly return the ID we determined/used
         return $id;
     }
 
