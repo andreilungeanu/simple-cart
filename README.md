@@ -5,61 +5,71 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/andreilungeanu/simple-cart/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/andreilungeanu/simple-cart/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/andreilungeanu/simple-cart.svg?style=flat-square)](https://packagist.org/packages/andreilungeanu/simple-cart)
 
-A flexible shopping cart implementation for Laravel with support for multiple discounts, tax calculations, and extra costs.
+A flexible shopping cart implementation for Laravel with support for multiple discounts, tax calculations, shipping, and extra costs.
 
 ## Features
 
-- Fluent interface for cart operations
-- Support for multiple discount types (fixed, percentage)
-- VAT rates based on country zones
-- Extra costs handling (gift wrapping, handling fees, etc.)
-- Cart persistence with automatic calculation storage
-- Event-driven architecture
-- Comprehensive test coverage
+- Fluent interface for easy cart management.
+- Flexible tax calculation supporting multiple zones, categories, and VAT exemption.
+- Configurable shipping methods and costs, including free shipping thresholds.
+- Support for various discount types (e.g., fixed amount, percentage).
+- Ability to add extra costs (e.g., gift wrapping, handling fees).
+- Multiple persistence drivers (database, session - database default).
+- Automatic calculation and storage of cart totals.
+- Event-driven architecture (`CartCreated`, `CartUpdated`, `CartCleared`).
+- Comprehensive test suite.
 
 ## Installation
 
+Install the package via composer:
 ```bash
 composer require andreilungeanu/simple-cart
 ```
 
-You can publish the configuration:
+Publish the configuration file (optional):
 ```bash
 php artisan vendor:publish --tag="simple-cart-config"
 ```
+This will create `config/simple-cart.php`.
 
-## Basic Usage
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-
-// Create and add items
-$cart = SimpleCart::create()
-    ->addItem(new CartItemDTO(
-        id: '1',
-        name: 'Product',
-        price: 99.99,
-        quantity: 1
-    ));
-
-// Get totals
-$subtotal = $cart->get()->getSubtotal(); // 99.99
-$total = $cart->get()->calculateTotal(); // With tax if applicable
+Publish the migration file (if using the default 'database' driver):
+```bash
+php artisan vendor:publish --tag="simple-cart-migrations"
+php artisan migrate
 ```
 
-## Configuration
+## Configuration (`config/simple-cart.php`)
 
 ```php
+<?php
+
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
+
 return [
+    // Persistence settings
     'storage' => [
-        'driver' => env('CART_STORAGE_DRIVER', 'database'),
-        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days
+        'driver' => env('CART_STORAGE_DRIVER', 'database'), // e.g., 'database', 'session'
+        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days in seconds
     ],
+
+    // Tax calculation settings
     'tax' => [
-        'provider' => DefaultTaxProvider::class,
+        'provider' => DefaultTaxProvider::class, // Implement custom provider if needed
+        'default_zone' => env('CART_DEFAULT_TAX_ZONE', 'US'), // Default tax zone if not specified
         'settings' => [
             'zones' => [
+                // Example: United States configuration
+                'US' => [
+                    'name' => 'United States',
+                    'default_rate' => env('CART_US_TAX_RATE', 0.0725), // Default rate for US
+                    'apply_to_shipping' => false, // Apply tax to shipping cost?
+                    'rates_by_category' => [ // Category-specific rates
+                        'digital' => 0.0,
+                        'food' => 0.03,
+                    ],
+                ],
+                // Example: Romania configuration
                 'RO' => [
                     'name' => 'Romania',
                     'default_rate' => env('CART_RO_TAX_RATE', 0.19),
@@ -69,268 +79,246 @@ return [
                         'food' => 0.09,
                     ],
                 ],
+                // Add more zones as needed...
             ],
         ],
     ],
+
+    // Shipping calculation settings
     'shipping' => [
-        'provider' => DefaultShippingProvider::class,
+        'provider' => DefaultShippingProvider::class, // Implement custom provider if needed
         'settings' => [
-            'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
+            'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00), // Subtotal threshold for free shipping
             'methods' => [
+                // Example: Standard shipping method
                 'standard' => [
                     'cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
                     'name' => 'Standard Shipping',
-                    'vat_included' => false,
-                    'vat_rate' => null, // Uses cart's VAT rate
+                    'vat_included' => false, // Is the cost inclusive of VAT?
+                    'vat_rate' => null, // null = use cart's default VAT rate, specific rate otherwise
                 ],
+                // Example: Express shipping method
+                'express' => [
+                    'cost' => env('CART_EXPRESS_SHIPPING_COST', 15.99),
+                    'name' => 'Express Shipping',
+                    'vat_included' => false,
+                    'vat_rate' => null,
+                ],
+                // Add more methods as needed...
             ],
         ],
     ],
 ];
+
 ```
 
-## Examples
+## Usage Examples
 
-### Cart Operations
+All examples use the `SimpleCart` facade, providing a fluent interface. The cart state is automatically persisted based on your configuration.
 
-Basic cart with VAT:
+### Basic Operations
+
 ```php
-$cart = new CartDTO(taxZone: 'RO');
-$cart->addItem(new CartItemDTO(
-    id: '1',
-    name: 'Product',
-    price: 100.00,
-    quantity: 1
-)); // Uses default 19% VAT
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 
-$total = $cart->calculateTotal(); // 119.00 (including VAT)
-```
+// Get the current cart (or create a new one if none exists)
+$cart = SimpleCart::get(); // Returns the Cart model instance
 
-B2B cart (VAT exempt):
-```php
-// Method 1: Set VAT exempt at creation
-$cart = new CartDTO(taxZone: 'RO', vatExempt: true);
-$cart->addItem(new CartItemDTO(
-    id: '1',
-    name: 'Product',
-    price: 100.00,
+// Add an item using the DTO
+SimpleCart::addItem(new CartItemDTO(
+    id: 'prod_123',
+    name: 'Laptop Pro',
+    price: 1299.99,
     quantity: 1
 ));
 
-// Method 2: Set VAT exempt after creation
-$cart = new CartDTO(taxZone: 'RO');
-$cart->setVatExempt(true); // All items become VAT exempt
-$cart->addItem(new CartItemDTO(
-    id: '2',
-    name: 'Product',
-    price: 100.00,
+// Add another item using an associative array (alternative syntax)
+SimpleCart::addItem([
+    'id' => 'prod_456',
+    'name' => 'Wireless Mouse',
+    price: 25.50,
     quantity: 1
 ));
 
-$total = $cart->calculateTotal(); // 200.00 (no VAT for any items)
+// Update an item's quantity
+SimpleCart::updateItem('prod_123', ['quantity' => 2]);
+
+// Remove an item
+SimpleCart::removeItem('prod_456');
+
+// Get calculated totals
+$totals = SimpleCart::getTotals(); // Returns a TotalsDTO object
+echo "Subtotal: " . $totals->subtotal;
+echo "Total: " . $totals->total;
+
+// Get the full cart details (items, totals, etc.)
+$cartDetails = SimpleCart::get(); // Returns the Cart model instance with relations loaded
+// Access items: $cartDetails->items
+// Access totals: $cartDetails->totals (calculated on the fly if needed)
+
+// Clear the cart
+SimpleCart::clear();
 ```
 
-### Shipping Examples
+### Tax Handling
 
-Basic shipping:
 ```php
-$cart->setShippingMethod('standard', [
-    'amount' => 5.99,
-    'vat_included' => false,
-    'vat_rate' => null // Uses cart's VAT rate
-]);
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+
+// Set tax zone (e.g., based on user's country) - uses 'default_zone' from config if not set
+SimpleCart::setTaxZone('RO'); // Use Romanian tax rules
+
+// Add items with different tax categories (defined in config)
+SimpleCart::addItem(new CartItemDTO(
+    id: 'book_abc',
+    name: 'Programming Guide',
+    price: 45.00,
+    quantity: 1,
+    category: 'books' // Uses 5% VAT in RO zone
+));
+SimpleCart::addItem(new CartItemDTO(
+    id: 'elec_xyz',
+    name: 'Monitor',
+    price: 300.00,
+    quantity: 1 // Uses default 19% VAT in RO zone
+));
+
+// Mark the cart as VAT exempt (e.g., for B2B)
+SimpleCart::setVatExempt(true);
+// Recalculate totals if needed, or it happens automatically on getTotals() / get()
+
+// Get totals (VAT will be 0 if exempt)
+$totals = SimpleCart::getTotals();
+echo "Tax Amount: " . $totals->taxAmount; // 0.00 if VAT exempt
+
+// Unset VAT exemption
+SimpleCart::setVatExempt(false);
 ```
 
-Shipping with included VAT:
-```php
-$cart->setShippingMethod('express', [
-    'amount' => 15.99,
-    'vat_included' => true,
-    'vat_rate' => 0.19
-]);
-```
-
-### Custom Shipping Provider
+### Shipping
 
 ```php
-class CustomShippingProvider implements ShippingRateProvider
-{
-    public function getRate(CartDTO $cart, string $method): array
-    {
-        return [
-            'amount' => 10.99,
-            'vat_rate' => 0.19,
-            'vat_included' => false,
-        ];
-    }
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 
-    public function getAvailableMethods(CartDTO $cart): array
-    {
-        return [
-            'standard' => ['name' => 'Standard Delivery'],
-            'express' => ['name' => 'Express Delivery'],
-        ];
-    }
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Set the desired shipping method (key from config)
+SimpleCart::setShippingMethod('express'); // Uses 'express' settings from config
+
+// Get totals including shipping
+$totals = SimpleCart::getTotals();
+echo "Shipping Cost: " . $totals->shippingAmount;
+echo "Total: " . $totals->total;
+
+// Check if free shipping applies (based on 'free_shipping_threshold' in config)
+// Add items until subtotal exceeds threshold...
+$totals = SimpleCart::getTotals();
+if ($totals->shippingAmount == 0) {
+    echo "Free shipping applied!";
 }
+
+// Remove shipping selection
+SimpleCart::removeShippingMethod();
+```
+
+### Discounts
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
+
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Apply a fixed amount discount using the DTO
+SimpleCart::applyDiscount(new DiscountDTO(
+    code: 'WELCOME10',
+    type: 'fixed', // 'fixed' or 'percentage'
+    amount: 10.00,
+    description: 'Welcome Offer'
+));
+
+// Apply a percentage discount using an array (alternative syntax)
+SimpleCart::applyDiscount([
+    'code' => 'SUMMER20',
+    'type' => 'percentage',
+    'amount' => 20.0, // 20%
+    'description' => 'Summer Sale'
+]);
+
+// Get totals including discounts
+$totals = SimpleCart::getTotals();
+echo "Discount Amount: " . $totals->discountAmount;
+echo "Total: " . $totals->total;
+
+// Remove a specific discount
+SimpleCart::removeDiscount('WELCOME10');
+
+// Clear all discounts
+SimpleCart::clearDiscounts();
 ```
 
 ### Extra Costs
 
-Basic handling fee with default cart VAT:
 ```php
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Handling',
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Add a fixed handling fee using the DTO (VAT applied based on cart's tax settings)
+SimpleCart::addExtraCost(new ExtraCostDTO(
+    name: 'Handling Fee',
     amount: 5.00,
-    type: 'fixed',
-    vatRate: null // Will use cart's default VAT rate
-));
-```
-
-Extra cost with included VAT:
-```php
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Insurance',
-    amount: 10.00,
-    type: 'fixed',
-    vatRate: 0.19,
-    vatIncluded: true
-));
-```
-
-Percentage-based fee with specific VAT:
-```php
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Processing Fee',
-    amount: 2.5,
-    type: 'percentage',
-    vatRate: 0.10,
-    vatIncluded: false
-));
-```
-
-### Complete Example
-
-```php
-// Create cart with VAT zone
-$cart = new CartDTO(taxZone: 'RO');
-
-// Add regular items (19% VAT)
-$cart->addItem(new CartItemDTO(
-    id: '1',
-    name: 'Electronics',
-    price: 1000.00,
-    quantity: 1
+    type: 'fixed' // 'fixed' or 'percentage'
 ));
 
-// Add reduced VAT items (5%)
-$cart->addItem(new CartItemDTO(
-    id: '2',
-    name: 'Book',
-    price: 50.00,
-    quantity: 2,
-    category: 'books'
-));
-
-// Add shipping with included VAT
-$cart->setShippingMethod('express', [
-    'amount' => 15.99,
-    'vat_included' => true,
-    'vat_rate' => 0.19
+// Add a percentage-based insurance cost using an array (alternative syntax)
+SimpleCart::addExtraCost([
+    'name' => 'Insurance',
+    'amount' => 1.5, // 1.5% of subtotal
+    'type' => 'percentage'
 ]);
 
-// Add handling fee with cart's default VAT
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Handling',
-    amount: 5.00,
-    type: 'fixed',
-    vatRate: null
+// Add gift wrapping using an array with specific VAT details (overrides cart default)
+SimpleCart::addExtraCost([
+    'name' => 'Gift Wrapping',
+    'amount' => 7.50,
+    'type' => 'fixed',
+    vatRate: 0.19, // Specific VAT rate for this cost
+    vatIncluded: true // Indicates the 7.50 already includes 19% VAT
 ));
 
-// Add insurance with specific VAT rate
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Insurance',
-    amount: 2,
-    type: 'percentage',
-    vatRate: 0.19,
-    vatIncluded: false
-));
 
-// Calculate all components
-$subtotal = $cart->getSubtotal();                // 1100.00 (1000 + 2×50)
-$shippingCost = $cart->getShippingAmount();      // 15.99 (VAT included)
-$extraCosts = $cart->getExtraCostsTotal();       // 27.00 (5.00 handling + 2% of subtotal)
-$totalVat = $cart->getTaxAmount();               // 207.73 (items + shipping + extra costs VAT)
-$total = $cart->calculateTotal();                // 1350.72
+// Get totals including extra costs
+$totals = SimpleCart::getTotals();
+echo "Extra Costs Total: " . $totals->extraCostsAmount;
+echo "Total: " . $totals->total;
 
-// Individual VAT breakdown:
-// - Electronics: 190.00 (19% of 1000)
-// - Books: 5.00 (5% of 100)
-// - Handling fee: 0.95 (19% of 5)
-// - Insurance: 11.78 (19% of 22)
-// - Shipping: included in price
-```
+// Remove a specific extra cost by name
+SimpleCart::removeExtraCost('Handling Fee');
 
-### Complete B2B Example (VAT Exempt)
-
-```php
-// Create VAT exempt cart (e.g., for B2B customers)
-$cart = new CartDTO(taxZone: 'RO', vatExempt: true);
-
-// Add items (no VAT will be applied)
-$cart->addItem(new CartItemDTO(
-    id: '1',
-    name: 'Bulk Electronics',
-    price: 1000.00,
-    quantity: 5
-));
-
-$cart->addItem(new CartItemDTO(
-    id: '2',
-    name: 'Office Supplies',
-    price: 100.00,
-    quantity: 10,
-    category: 'office'
-));
-
-// Add shipping (no VAT)
-$cart->setShippingMethod('express', [
-    'amount' => 25.99,
-    'vat_included' => false,
-    'vat_rate' => null
-]);
-
-// Add extra costs (no VAT)
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Handling',
-    amount: 15.00,
-    type: 'fixed'
-));
-
-$cart->addExtraCost(new ExtraCostDTO(
-    name: 'Insurance',
-    amount: 1.5,
-    type: 'percentage'
-));
-
-// Calculate all components
-$subtotal = $cart->getSubtotal();           // 6000.00 (5×1000 + 10×100)
-$shippingCost = $cart->getShippingAmount(); // 25.99
-$extraCosts = $cart->getExtraCostsTotal();  // 105.00 (15.00 + 1.5% of 6000)
-$totalVat = $cart->getTaxAmount();          // 0.00 (VAT exempt)
-$total = $cart->calculateTotal();           // 6130.99
-
-// Note: No VAT is calculated for any component due to VAT exempt status
+// Clear all extra costs
+SimpleCart::clearExtraCosts();
 ```
 
 ## Events
 
-The package fires these events:
-- CartCreated
-- CartUpdated
-- CartCleared
+The package fires the following events, allowing you to hook into the cart lifecycle:
+
+- `AndreiLungeanu\SimpleCart\Events\CartCreated`: Fired when a new cart is created.
+- `AndreiLungeanu\SimpleCart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified.
+- `AndreiLungeanu\SimpleCart\Events\CartCleared`: Fired when the cart is cleared.
+
+You can create listeners for these events as per standard Laravel event handling.
 
 ## Testing
 
+Run the test suite using Pest:
 ```bash
 composer test
 ```

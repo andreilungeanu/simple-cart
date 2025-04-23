@@ -86,11 +86,11 @@ class SimpleCart
         return $this;
     }
 
-    // Delegate to AddItemToCartAction
-    public function addItem(CartItemDTO $item): static
+    // Delegate to AddItemToCartAction, accepting DTO or array
+    public function addItem(CartItemDTO|array $item): static
     {
-        $this->addItemAction->execute($this, $item);
-        return $this; // Action returns $this, but keep fluent chain here
+        $this->addItemAction->execute($this, $item); // Action now handles both types
+        return $this;
     }
 
     public function removeItem(string $itemId): static
@@ -190,11 +190,33 @@ class SimpleCart
         return $this;
     }
 
-    public function applyDiscount(string $code): static
+    /**
+     * Apply a discount to the cart.
+     *
+     * @param DiscountDTO|array $discount Discount DTO instance or associative array.
+     *                                     Array must contain required keys for DiscountDTO.
+     * @return static
+     * @throws \InvalidArgumentException
+     */
+    public function applyDiscount(DiscountDTO|array $discount): static
     {
-        // Assuming DiscountDTO constructor takes the code
-        $this->discounts->push(new DiscountDTO($code));
-        event(new CartUpdated($this)); // Pass $this
+        if (is_array($discount)) {
+            // Basic validation for required keys if it's an array
+            // Adjust required keys based on DiscountDTO constructor/properties
+            if (!isset($discount['code'], $discount['type'], $discount['amount'])) {
+                throw new \InvalidArgumentException('Discount array must contain code, type, and amount.');
+            }
+            $discountDTO = new DiscountDTO(...$discount);
+        } elseif ($discount instanceof DiscountDTO) {
+            $discountDTO = $discount;
+        } else {
+            throw new \InvalidArgumentException('Discount must be a DiscountDTO instance or an associative array.');
+        }
+
+        // Check if discount with the same code already exists? Optional.
+        // For now, just add it.
+        $this->discounts->push($discountDTO);
+        event(new CartUpdated($this));
 
         return $this;
     }
@@ -369,9 +391,32 @@ class SimpleCart
 
     // --- Methods to keep in SimpleCart (State modifiers, getters) ---
 
-    public function addExtraCost(ExtraCostDTO $cost): static
+    /**
+     * Add an extra cost to the cart.
+     *
+     * @param ExtraCostDTO|array $cost ExtraCost DTO instance or associative array.
+     *                                 Array must contain required keys for ExtraCostDTO.
+     * @return static
+     * @throws \InvalidArgumentException
+     */
+    public function addExtraCost(ExtraCostDTO|array $cost): static
     {
-        $this->extraCosts->push($cost);
+        if (is_array($cost)) {
+            // Basic validation for required keys if it's an array
+            // Adjust required keys based on ExtraCostDTO constructor/properties
+            if (!isset($cost['name'], $cost['amount'], $cost['type'])) {
+                throw new \InvalidArgumentException('Extra cost array must contain name, amount, and type.');
+            }
+            $extraCostDTO = new ExtraCostDTO(...$cost);
+        } elseif ($cost instanceof ExtraCostDTO) {
+            $extraCostDTO = $cost;
+        } else {
+            throw new \InvalidArgumentException('Extra cost must be an ExtraCostDTO instance or an associative array.');
+        }
+
+        // Check if extra cost with the same name already exists? Optional.
+        // For now, just add it.
+        $this->extraCosts->push($extraCostDTO);
         event(new CartUpdated($this));
         return $this;
     }
