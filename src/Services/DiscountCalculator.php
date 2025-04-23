@@ -3,18 +3,19 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Contracts\Calculator;
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
 use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
 
 class DiscountCalculator implements Calculator
 {
-    public function calculate(CartDTO $cart): float
+    // Change type hint from CartDTO to SimpleCart
+    public function calculate(SimpleCart $cart): float
     {
         return $cart->getDiscounts()->sum(function (DiscountDTO $discount) use ($cart) {
             return match ($discount->type) {
                 'fixed' => $this->calculateFixed($discount),
-                'percentage' => $this->calculatePercentage($discount, $cart),
-                'shipping' => $this->calculateShipping($discount, $cart),
+                'percentage' => $this->calculatePercentage($discount, $cart), // Pass SimpleCart
+                'shipping' => $this->calculateShipping($discount, $cart), // Pass SimpleCart
                 default => 0.0,
             };
         });
@@ -25,20 +26,23 @@ class DiscountCalculator implements Calculator
         return $discount->value;
     }
 
-    private function calculatePercentage(DiscountDTO $discount, CartDTO $cart): float
+    // Change type hint from CartDTO to SimpleCart
+    private function calculatePercentage(DiscountDTO $discount, SimpleCart $cart): float
     {
         // Calculate percentage after fixed discounts
-        $subtotal = $cart->getSubtotal();
-        $fixedDiscounts = $cart->getDiscounts()
-            ->filter(fn ($d) => $d->type === 'fixed')
-            ->sum(fn ($d) => $d->value);
+        $subtotal = $cart->getSubtotal(); // Call method on SimpleCart
+        $fixedDiscounts = $cart->getDiscounts() // Call method on SimpleCart
+            ->filter(fn($d) => $d->type === 'fixed')
+            ->sum(fn($d) => $d->value);
 
         return (($subtotal - $fixedDiscounts) * $discount->value) / 100;
     }
 
-    private function calculateShipping(DiscountDTO $discount, CartDTO $cart): float
+    // Change type hint from CartDTO to SimpleCart
+    private function calculateShipping(DiscountDTO $discount, SimpleCart $cart): float
     {
-        // Implement shipping discount logic
-        return $discount->value;
+        // Implement shipping discount logic - needs access to shipping cost from SimpleCart
+        // Example: return min($discount->value, $cart->getShippingAmount());
+        return $discount->value; // Placeholder
     }
 }

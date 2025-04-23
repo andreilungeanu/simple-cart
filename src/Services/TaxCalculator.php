@@ -4,7 +4,7 @@ namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Contracts\Calculator;
 use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
-use AndreiLungeanu\SimpleCart\DTOs\CartDTO;
+use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
 
 class TaxCalculator implements Calculator
 {
@@ -12,17 +12,20 @@ class TaxCalculator implements Calculator
         protected TaxRateProvider $provider
     ) {}
 
-    public function calculate(CartDTO $cart): float
+    // Change type hint from CartDTO to SimpleCart
+    public function calculate(SimpleCart $cart): float
     {
         if ($cart->isVatExempt()) {
             return 0.0;
         }
 
-        return round($cart->getItems()->sum(function ($item) use ($cart) {
+        // Ensure $item is type-hinted if possible, assuming it's CartItemDTO from getItems()
+        return round($cart->getItems()->sum(function (\AndreiLungeanu\SimpleCart\DTOs\CartItemDTO $item) use ($cart) {
             $rate = $item->category ?
                 $this->provider->getRateForCategory($cart->taxZone, $item->category) :
-                $this->provider->getRate($cart);
+                $this->provider->getRate($cart); // Pass SimpleCart instance
 
+            // Pass SimpleCart instance
             $itemTax = $item->price * $item->quantity * ($rate ?? $this->provider->getRate($cart));
 
             return $itemTax;
