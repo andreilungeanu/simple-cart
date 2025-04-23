@@ -20,7 +20,7 @@ test('can save and retrieve a basic cart', function () {
     Cart::create(userId: 'user-123', taxZone: 'RO')
         ->addItem(new CartItemDTO(id: 'prod-abc', name: 'Test Product prod-abc', quantity: 2, price: 50.00))
         ->addNote('Persistence test note')
-        ->applyDiscount('SAVE10') // Assuming DiscountDTO defaults
+        ->applyDiscount(new DiscountDTO(code: 'SAVE10', type: 'fixed', value: 10.0)) // Pass DTO with 'value'
         ->setShippingMethod('standard', ['vat_included' => false])
         ->save(); // Save the cart state
 

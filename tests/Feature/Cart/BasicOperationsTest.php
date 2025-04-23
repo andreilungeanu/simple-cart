@@ -3,6 +3,7 @@
 // Use the Facade for testing the public API
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO; // Import DiscountDTO
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 use Illuminate\Support\Facades\Event;
 use AndreiLungeanu\SimpleCart\Events\CartCreated;
@@ -151,8 +152,9 @@ test('can add a note', function () {
 
 test('can apply a discount code', function () {
     Event::fake();
+    $discount = new DiscountDTO(code: 'TESTCODE', type: 'fixed', value: 5.0); // Use 'value' instead of 'amount'
 
-    Cart::create()->applyDiscount('TESTCODE');
+    Cart::create()->applyDiscount($discount);
     $cartData = Cart::get();
 
     expect($cartData['discounts'])->toBeArray()
@@ -197,7 +199,7 @@ test('can chain methods fluently', function () {
         ->addItem(new CartItemDTO(id: 'item-A', name: 'Test Product item-A', price: 10.00, quantity: 1))
         ->addItem(new CartItemDTO(id: 'item-B', name: 'Test Product item-B', price: 20.00, quantity: 2))
         ->updateQuantity('item-A', 3) // 3 * 10 = 30
-        ->applyDiscount('SUMMER10')    // Assuming DiscountDTO defaults
+        ->applyDiscount(new DiscountDTO(code: 'SUMMER10', type: 'percentage', value: 10.0)) // Use 'value' instead of 'amount'
         ->addNote('Please deliver quickly')
         ->setShippingMethod('express', ['vat_rate' => 0.1]) // Assuming express costs something
         ->setVatExempt(false);
