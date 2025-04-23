@@ -5,8 +5,8 @@ namespace AndreiLungeanu\SimpleCart\Actions;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\SimpleCart;
-use InvalidArgumentException;
 // No longer need Dispatcher contract
+// No longer need InvalidArgumentException here
 
 class AddItemToCartAction
 {
@@ -14,36 +14,22 @@ class AddItemToCartAction
     public function __construct() {}
 
     /**
-     * Adds an item (DTO or array) to the cart instance.
-     * If an array is provided, it must contain the required keys for CartItemDTO.
+     * Adds an item to the cart instance.
      *
      * @param SimpleCart $cart The cart instance to modify.
-     * @param CartItemDTO|array $item The item DTO or an associative array representing the item.
+     * @param CartItemDTO $item The item DTO to add.
      * @return SimpleCart The modified cart instance.
-     * @throws InvalidArgumentException If the provided array is invalid.
      */
-    public function execute(SimpleCart $cart, CartItemDTO|array $item): SimpleCart
+    public function execute(SimpleCart $cart, CartItemDTO $item): SimpleCart
     {
-        if (is_array($item)) {
-            // Basic validation for required keys if it's an array
-            if (!isset($item['id'], $item['name'], $item['price'], $item['quantity'])) {
-                throw new InvalidArgumentException('Item array must contain id, name, price, and quantity.');
-            }
-            // Convert array to DTO
-            $itemDTO = new CartItemDTO(...$item);
-        } elseif ($item instanceof CartItemDTO) {
-            $itemDTO = $item;
-        } else {
-            // This case should ideally not be reached due to type hinting, but good practice
-            throw new InvalidArgumentException('Item must be a CartItemDTO instance or an associative array.');
-        }
+        // Basic validation or checks could go here if needed
 
-        // Modify the cart state directly
+        // Modify the cart state directly (assuming properties are accessible or via setters)
         // Since items is protected, we need a way to add. Let's assume a public method on SimpleCart or modify visibility.
         // For now, let's add a temporary public method `internalAddItem` to SimpleCart for the action to use.
         // Alternatively, Actions could be friends or operate differently.
         // The core logic:
-        $cart->getItems()->push($itemDTO); // Push the validated/created DTO
+        $cart->getItems()->push($item); // Access collection and push the DTO
         event(new CartUpdated($cart)); // Use event() helper
 
         return $cart; // Return the modified cart

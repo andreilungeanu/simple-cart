@@ -133,13 +133,13 @@ SimpleCart::addItem(new CartItemDTO(
     quantity: 1
 ));
 
-// Add another item using an associative array (alternative syntax)
+// Add another item using an associative array (converted internally)
 SimpleCart::addItem([
     'id' => 'prod_456',
     'name' => 'Wireless Mouse',
-    price: 25.50,
-    quantity: 1
-));
+    'price' => 25.50,
+    'quantity' => 1
+]);
 
 // Update an item's quantity
 SimpleCart::updateItem('prod_123', ['quantity' => 2]);
@@ -241,11 +241,11 @@ SimpleCart::applyDiscount(new DiscountDTO(
     description: 'Welcome Offer'
 ));
 
-// Apply a percentage discount using an array (alternative syntax)
+// Apply a percentage discount using an array (converted internally)
 SimpleCart::applyDiscount([
     'code' => 'SUMMER20',
     'type' => 'percentage',
-    'amount' => 20.0, // 20%
+    'value' => 20.0, // Use 'value' as per DTO property
     'description' => 'Summer Sale'
 ]);
 
@@ -277,21 +277,21 @@ SimpleCart::addExtraCost(new ExtraCostDTO(
     type: 'fixed' // 'fixed' or 'percentage'
 ));
 
-// Add a percentage-based insurance cost using an array (alternative syntax)
+// Add a percentage-based insurance cost using an array (converted internally)
 SimpleCart::addExtraCost([
     'name' => 'Insurance',
     'amount' => 1.5, // 1.5% of subtotal
     'type' => 'percentage'
 ]);
 
-// Add gift wrapping using an array with specific VAT details (overrides cart default)
+// Add gift wrapping using an array with specific VAT details (converted internally)
 SimpleCart::addExtraCost([
     'name' => 'Gift Wrapping',
     'amount' => 7.50,
     'type' => 'fixed',
-    vatRate: 0.19, // Specific VAT rate for this cost
-    vatIncluded: true // Indicates the 7.50 already includes 19% VAT
-));
+    'vatRate' => 0.19, // Specific VAT rate for this cost
+    'vatIncluded' => true // Indicates the 7.50 already includes 19% VAT
+]);
 
 
 // Get totals including extra costs

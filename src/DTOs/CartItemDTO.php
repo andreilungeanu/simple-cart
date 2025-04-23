@@ -32,4 +32,28 @@ readonly class CartItemDTO
             metadata: $this->metadata,
         );
     }
+
+    /**
+     * Create a new DTO instance from an array.
+     *
+     * @param array $data Associative array with item data.
+     * @return self
+     * @throws \InvalidArgumentException If required keys are missing or data is invalid.
+     */
+    public static function fromArray(array $data): self
+    {
+        if (!isset($data['id'], $data['name'], $data['price'], $data['quantity'])) {
+            throw new \InvalidArgumentException('Item array must contain id, name, price, and quantity.');
+        }
+
+        // Use constructor which already contains validation
+        return new self(
+            id: $data['id'],
+            name: $data['name'],
+            price: (float) $data['price'], // Ensure float type
+            quantity: (int) $data['quantity'], // Ensure int type
+            category: $data['category'] ?? null,
+            metadata: $data['metadata'] ?? [],
+        );
+    }
 }
