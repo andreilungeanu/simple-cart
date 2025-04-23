@@ -7,21 +7,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids; // Import the HasUuids trait if using Laravel 9+
 use Illuminate\Database\Eloquent\Factories\HasFactory; // Optional: Add if using factories
 
+/**
+ * @property string $id
+ * @property ?string $user_id
+ * @property array $items
+ * @property array $discounts
+ * @property array $notes
+ * @property array $extra_costs
+ * @property ?string $shipping_method
+ * @property ?string $tax_zone
+ * @property bool $vat_exempt
+ * @property ?float $tax_amount
+ * @property ?float $shipping_amount
+ * @property ?float $discount_amount
+ * @property ?float $subtotal_amount
+ * @property ?float $total_amount
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Cart extends Model
 {
-    // Optional: Add HasFactory if needed
-    // use HasFactory;
-
-    // If using Laravel 9+, the HasUuids trait is the easiest way
-    // use HasUuids;
-    // If using older Laravel or not using the trait, configure manually:
-    public $incrementing = false; // Tell Eloquent the ID is not auto-incrementing
-    protected $keyType = 'string'; // Tell Eloquent the key type is string
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $guarded = [];
 
     protected $casts = [
-        // Add 'id' => 'string' if not using HasUuids trait to ensure it's treated as string
         'id' => 'string',
         'items' => 'array',
         'discounts' => 'array',

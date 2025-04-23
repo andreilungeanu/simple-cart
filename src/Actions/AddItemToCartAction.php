@@ -5,12 +5,9 @@ namespace AndreiLungeanu\SimpleCart\Actions;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\SimpleCart;
-// No longer need Dispatcher contract
-// No longer need InvalidArgumentException here
 
 class AddItemToCartAction
 {
-    // No need to inject Dispatcher if using event() helper
     public function __construct() {}
 
     /**
@@ -22,16 +19,9 @@ class AddItemToCartAction
      */
     public function execute(SimpleCart $cart, CartItemDTO $item): SimpleCart
     {
-        // Basic validation or checks could go here if needed
+        $cart->getItems()->push($item);
+        event(new CartUpdated($cart));
 
-        // Modify the cart state directly (assuming properties are accessible or via setters)
-        // Since items is protected, we need a way to add. Let's assume a public method on SimpleCart or modify visibility.
-        // For now, let's add a temporary public method `internalAddItem` to SimpleCart for the action to use.
-        // Alternatively, Actions could be friends or operate differently.
-        // The core logic:
-        $cart->getItems()->push($item); // Access collection and push the DTO
-        event(new CartUpdated($cart)); // Use event() helper
-
-        return $cart; // Return the modified cart
+        return $cart;
     }
 }

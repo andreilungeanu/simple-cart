@@ -3,11 +3,10 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
-use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
+use AndreiLungeanu\SimpleCart\SimpleCart;
 
 class DefaultShippingProvider implements ShippingRateProvider
 {
-    // Change type hint from CartDTO to SimpleCart
     public function getRate(SimpleCart $cart, string $method): array
     {
         $settings = config('simple-cart.shipping.settings');
@@ -26,10 +25,8 @@ class DefaultShippingProvider implements ShippingRateProvider
         ];
     }
 
-    // Change type hint from CartDTO to SimpleCart
     public function getAvailableMethods(SimpleCart $cart): array
     {
-        // The cart instance might not be needed here if just listing all configured methods
         return collect(config('simple-cart.shipping.settings.methods'))
             ->map(fn($method, $key) => [
                 'name' => $method['name'],
