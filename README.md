@@ -38,6 +38,206 @@ php artisan vendor:publish --tag="simple-cart-migrations"
 php artisan migrate
 ```
 
+## Usage Examples
+
+All examples use the `SimpleCart` facade, providing a fluent interface. The cart state is automatically persisted based on your configuration.
+
+### Basic Operations
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+
+// Get the current cart (or create a new one if none exists)
+$cart = SimpleCart::get(); // Returns the Cart model instance
+
+// Add an item using an associative array (Recommended)
+// The array keys match the properties of CartItemDTO.
+SimpleCart::addItem([
+    'id' => 'prod_456',
+    'name' => 'Wireless Mouse',
+    'price' => 25.50,
+    'quantity' => 1
+]);
+
+// You can also use the CartItemDTO directly if preferred:
+SimpleCart::addItem(new CartItemDTO(
+    id: 'prod_123',
+    name: 'Laptop Pro',
+    price: 1299.99,
+    quantity: 1
+));
+
+// Update an item's quantity
+SimpleCart::updateItem('prod_123', ['quantity' => 2]);
+
+// Remove an item
+SimpleCart::removeItem('prod_456');
+
+// Get calculated totals
+$totals = SimpleCart::getTotals(); // Returns a TotalsDTO object
+echo "Subtotal: " . $totals->subtotal;
+echo "Total: " . $totals->total;
+
+// Get the full cart details (items, totals, etc.)
+$cartDetails = SimpleCart::get(); // Returns the Cart model instance with relations loaded
+// Access items: $cartDetails->items
+// Access totals: $cartDetails->totals (calculated on the fly if needed)
+
+// Clear the cart
+SimpleCart::clear();
+```
+
+### Tax Handling
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+
+// Set tax zone (e.g., based on user's country) - uses 'default_zone' from config if not set
+SimpleCart::setTaxZone('RO'); // Use Romanian tax rules
+
+// Add items with different tax categories (defined in config) using arrays
+SimpleCart::addItem([
+    'id' => 'book_abc',
+    'name' => 'Programming Guide',
+    'price' => 45.00,
+    'quantity' => 1,
+    'category' => 'books' // Uses 5% VAT in RO zone
+]);
+SimpleCart::addItem([
+    'id' => 'elec_xyz',
+    'name' => 'Monitor',
+    'price' => 300.00,
+    'quantity' => 1 // Uses default 19% VAT in RO zone
+]);
+
+// Mark the cart as VAT exempt (e.g., for B2B)
+SimpleCart::setVatExempt(true);
+// Recalculate totals if needed, or it happens automatically on getTotals() / get()
+
+// Get totals (VAT will be 0 if exempt)
+$totals = SimpleCart::getTotals();
+echo "Tax Amount: " . $totals->taxAmount; // 0.00 if VAT exempt
+
+// Unset VAT exemption
+SimpleCart::setVatExempt(false);
+```
+
+### Shipping
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Set the desired shipping method (key from config)
+SimpleCart::setShippingMethod('express'); // Uses 'express' settings from config
+
+// Get totals including shipping
+$totals = SimpleCart::getTotals();
+echo "Shipping Cost: " . $totals->shippingAmount;
+echo "Total: " . $totals->total;
+
+// Check if free shipping applies (based on 'free_shipping_threshold' in config)
+// Add items until subtotal exceeds threshold...
+$totals = SimpleCart::getTotals();
+if ($totals->shippingAmount == 0) {
+    echo "Free shipping applied!";
+}
+
+// Remove shipping selection
+SimpleCart::removeShippingMethod();
+```
+
+### Discounts
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
+
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Apply a fixed amount discount using an array (Recommended)
+// Keys match DiscountDTO properties. Use 'amount' for fixed, 'value' for percentage.
+SimpleCart::applyDiscount([
+    'code' => 'WELCOME10',
+    'type' => 'fixed',
+    'amount' => 10.00,
+    'description' => 'Welcome Offer'
+]);
+
+// Apply a percentage discount using an array
+SimpleCart::applyDiscount([
+    'code' => 'SUMMER20',
+    'type' => 'percentage',
+    'value' => 20.0,
+    'description' => 'Summer Sale'
+]);
+
+// You can also use the DiscountDTO directly:
+// SimpleCart::applyDiscount(new DiscountDTO(...));
+
+// Get totals including discounts
+$totals = SimpleCart::getTotals();
+echo "Discount Amount: " . $totals->discountAmount;
+echo "Total: " . $totals->total;
+
+// Remove a specific discount
+SimpleCart::removeDiscount('WELCOME10');
+
+// Clear all discounts
+SimpleCart::clearDiscounts();
+```
+
+### Extra Costs
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
+use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+
+// Add items first...
+// SimpleCart::addItem(...);
+
+// Add a fixed handling fee using an array (Recommended)
+// Keys match ExtraCostDTO properties. VAT applied based on cart's tax settings.
+SimpleCart::addExtraCost([
+    'name' => 'Handling Fee',
+    'amount' => 5.00,
+    'type' => 'fixed' // 'fixed' or 'percentage'
+]);
+
+// Add a percentage-based insurance cost using an array
+SimpleCart::addExtraCost([
+    'name' => 'Insurance',
+    'amount' => 1.5, // 1.5% of subtotal
+    'type' => 'percentage'
+]);
+
+// Add gift wrapping using an array with specific VAT details
+SimpleCart::addExtraCost([
+    'name' => 'Gift Wrapping',
+    'amount' => 7.50,
+    'type' => 'fixed',
+    'vatRate' => 0.19, // Specific VAT rate for this cost
+    'vatIncluded' => true // Indicates the 7.50 already includes 19% VAT
+]);
+
+
+// Get totals including extra costs
+$totals = SimpleCart::getTotals();
+echo "Extra Costs Total: " . $totals->extraCostsAmount;
+echo "Total: " . $totals->total;
+
+// Remove a specific extra cost by name
+SimpleCart::removeExtraCost('Handling Fee');
+
+// Clear all extra costs
+SimpleCart::clearExtraCosts();
+```
+
 ## Configuration (`config/simple-cart.php`)
 
 ```php
@@ -110,200 +310,6 @@ return [
     ],
 ];
 
-```
-
-## Usage Examples
-
-All examples use the `SimpleCart` facade, providing a fluent interface. The cart state is automatically persisted based on your configuration.
-
-### Basic Operations
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-
-// Get the current cart (or create a new one if none exists)
-$cart = SimpleCart::get(); // Returns the Cart model instance
-
-// Add an item using the DTO
-SimpleCart::addItem(new CartItemDTO(
-    id: 'prod_123',
-    name: 'Laptop Pro',
-    price: 1299.99,
-    quantity: 1
-));
-
-// Add another item using an associative array (converted internally)
-SimpleCart::addItem([
-    'id' => 'prod_456',
-    'name' => 'Wireless Mouse',
-    'price' => 25.50,
-    'quantity' => 1
-]);
-
-// Update an item's quantity
-SimpleCart::updateItem('prod_123', ['quantity' => 2]);
-
-// Remove an item
-SimpleCart::removeItem('prod_456');
-
-// Get calculated totals
-$totals = SimpleCart::getTotals(); // Returns a TotalsDTO object
-echo "Subtotal: " . $totals->subtotal;
-echo "Total: " . $totals->total;
-
-// Get the full cart details (items, totals, etc.)
-$cartDetails = SimpleCart::get(); // Returns the Cart model instance with relations loaded
-// Access items: $cartDetails->items
-// Access totals: $cartDetails->totals (calculated on the fly if needed)
-
-// Clear the cart
-SimpleCart::clear();
-```
-
-### Tax Handling
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-
-// Set tax zone (e.g., based on user's country) - uses 'default_zone' from config if not set
-SimpleCart::setTaxZone('RO'); // Use Romanian tax rules
-
-// Add items with different tax categories (defined in config)
-SimpleCart::addItem(new CartItemDTO(
-    id: 'book_abc',
-    name: 'Programming Guide',
-    price: 45.00,
-    quantity: 1,
-    category: 'books' // Uses 5% VAT in RO zone
-));
-SimpleCart::addItem(new CartItemDTO(
-    id: 'elec_xyz',
-    name: 'Monitor',
-    price: 300.00,
-    quantity: 1 // Uses default 19% VAT in RO zone
-));
-
-// Mark the cart as VAT exempt (e.g., for B2B)
-SimpleCart::setVatExempt(true);
-// Recalculate totals if needed, or it happens automatically on getTotals() / get()
-
-// Get totals (VAT will be 0 if exempt)
-$totals = SimpleCart::getTotals();
-echo "Tax Amount: " . $totals->taxAmount; // 0.00 if VAT exempt
-
-// Unset VAT exemption
-SimpleCart::setVatExempt(false);
-```
-
-### Shipping
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-
-// Add items first...
-// SimpleCart::addItem(...);
-
-// Set the desired shipping method (key from config)
-SimpleCart::setShippingMethod('express'); // Uses 'express' settings from config
-
-// Get totals including shipping
-$totals = SimpleCart::getTotals();
-echo "Shipping Cost: " . $totals->shippingAmount;
-echo "Total: " . $totals->total;
-
-// Check if free shipping applies (based on 'free_shipping_threshold' in config)
-// Add items until subtotal exceeds threshold...
-$totals = SimpleCart::getTotals();
-if ($totals->shippingAmount == 0) {
-    echo "Free shipping applied!";
-}
-
-// Remove shipping selection
-SimpleCart::removeShippingMethod();
-```
-
-### Discounts
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
-
-// Add items first...
-// SimpleCart::addItem(...);
-
-// Apply a fixed amount discount using the DTO
-SimpleCart::applyDiscount(new DiscountDTO(
-    code: 'WELCOME10',
-    type: 'fixed', // 'fixed' or 'percentage'
-    amount: 10.00,
-    description: 'Welcome Offer'
-));
-
-// Apply a percentage discount using an array (converted internally)
-SimpleCart::applyDiscount([
-    'code' => 'SUMMER20',
-    'type' => 'percentage',
-    'value' => 20.0, // Use 'value' as per DTO property
-    'description' => 'Summer Sale'
-]);
-
-// Get totals including discounts
-$totals = SimpleCart::getTotals();
-echo "Discount Amount: " . $totals->discountAmount;
-echo "Total: " . $totals->total;
-
-// Remove a specific discount
-SimpleCart::removeDiscount('WELCOME10');
-
-// Clear all discounts
-SimpleCart::clearDiscounts();
-```
-
-### Extra Costs
-
-```php
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
-
-// Add items first...
-// SimpleCart::addItem(...);
-
-// Add a fixed handling fee using the DTO (VAT applied based on cart's tax settings)
-SimpleCart::addExtraCost(new ExtraCostDTO(
-    name: 'Handling Fee',
-    amount: 5.00,
-    type: 'fixed' // 'fixed' or 'percentage'
-));
-
-// Add a percentage-based insurance cost using an array (converted internally)
-SimpleCart::addExtraCost([
-    'name' => 'Insurance',
-    'amount' => 1.5, // 1.5% of subtotal
-    'type' => 'percentage'
-]);
-
-// Add gift wrapping using an array with specific VAT details (converted internally)
-SimpleCart::addExtraCost([
-    'name' => 'Gift Wrapping',
-    'amount' => 7.50,
-    'type' => 'fixed',
-    'vatRate' => 0.19, // Specific VAT rate for this cost
-    'vatIncluded' => true // Indicates the 7.50 already includes 19% VAT
-]);
-
-
-// Get totals including extra costs
-$totals = SimpleCart::getTotals();
-echo "Extra Costs Total: " . $totals->extraCostsAmount;
-echo "Total: " . $totals->total;
-
-// Remove a specific extra cost by name
-SimpleCart::removeExtraCost('Handling Fee');
-
-// Clear all extra costs
-SimpleCart::clearExtraCosts();
 ```
 
 ## Events

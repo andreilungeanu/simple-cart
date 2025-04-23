@@ -33,10 +33,10 @@ class DatabaseCartRepository implements CartRepository
 
         $dataToSave = [
             'id' => $id,
-            'items' => json_encode($cartData['items'] ?? []),
-            'discounts' => json_encode($cartData['discounts'] ?? []),
-            'notes' => json_encode($cartData['notes'] ?? []),
-            'extra_costs' => json_encode($cartData['extra_costs'] ?? []),
+            'items' => $cartData['items'] ?? [], // Let Eloquent casting handle encoding
+            'discounts' => $cartData['discounts'] ?? [], // Let Eloquent casting handle encoding
+            'notes' => $cartData['notes'] ?? [], // Let Eloquent casting handle encoding
+            'extra_costs' => $cartData['extra_costs'] ?? [], // Let Eloquent casting handle encoding
             'user_id' => $cartData['user_id'] ?? null,
             'shipping_method' => $cartData['shipping_method'] ?? null,
             'tax_zone' => $cartData['tax_zone'] ?? null,
