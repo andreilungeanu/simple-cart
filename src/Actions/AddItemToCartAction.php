@@ -5,11 +5,12 @@ namespace AndreiLungeanu\SimpleCart\Actions;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\SimpleCart;
-use Illuminate\Events\Dispatcher;
+// No longer need Dispatcher contract
 
 class AddItemToCartAction
 {
-    public function __construct(protected Dispatcher $events) {}
+    // No need to inject Dispatcher if using event() helper
+    public function __construct() {}
 
     /**
      * Adds an item to the cart instance.
@@ -30,7 +31,7 @@ class AddItemToCartAction
 
         // The core logic:
         $cart->getItems()->push($item); // Access collection and push
-        $this->events->dispatch(new CartUpdated($cart));
+        event(new CartUpdated($cart)); // Use event() helper
 
         return $cart; // Return the modified cart
     }
