@@ -11,13 +11,13 @@ class AddItemToCartAction
     public function __construct() {}
 
     /**
-     * Adds an item to the cart instance.
+     * Make the action invokable.
      *
-     * @param SimpleCart $cart The cart instance to modify.
-     * @param CartItemDTO $item The item DTO to add.
-     * @return SimpleCart The modified cart instance.
+     * @param SimpleCart $cart
+     * @param CartItemDTO $item
+     * @return SimpleCart
      */
-    public function execute(SimpleCart $cart, CartItemDTO $item): SimpleCart
+    public function __invoke(SimpleCart $cart, CartItemDTO $item): SimpleCart
     {
         $cart->getItems()->push($item);
         event(new CartUpdated($cart));

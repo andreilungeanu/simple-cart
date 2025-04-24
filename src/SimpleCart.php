@@ -85,7 +85,7 @@ class SimpleCart
     {
         $itemDTO = $item instanceof CartItemDTO ? $item : CartItemDTO::fromArray($item);
 
-        $this->addItemAction->execute($this, $itemDTO);
+        ($this->addItemAction)($this, $itemDTO);
         return $this;
     }
 
