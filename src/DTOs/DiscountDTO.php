@@ -42,4 +42,21 @@ readonly class DiscountDTO
             expiresAt: $data['expiresAt'] ?? null,
         );
     }
+
+    /**
+     * Convert the DTO instance to an array.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'code' => $this->code,
+            'type' => $this->type,
+            'value' => $this->value,
+            'appliesTo' => $this->appliesTo,
+            'minimumAmount' => $this->minimumAmount,
+            'expiresAt' => $this->expiresAt,
+        ];
+    }
 }

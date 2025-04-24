@@ -15,74 +15,77 @@ uses(RefreshDatabase::class); // Apply trait to tests in this file
 // Removed duplicate helper function createTestItem - now defined in tests/Pest.php
 
 
-test('can save and retrieve a basic cart', function () {
-    // Arrange: Create and save a cart
-    Cart::create(userId: 'user-123', taxZone: 'RO')
-        ->addItem(new CartItemDTO(id: 'prod-abc', name: 'Test Product prod-abc', quantity: 2, price: 50.00))
-        ->addNote('Persistence test note')
-        ->applyDiscount(new DiscountDTO(code: 'SAVE10', type: 'fixed', value: 10.0)) // Pass DTO with 'value'
-        ->setShippingMethod('standard', ['vat_included' => false])
-        ->save(); // Save the cart state
-
-    // Retrieve the ID from the current cart state
-    $cartDataBefore = Cart::get();
-    $cartId = $cartDataBefore['id'];
+test('can create, modify, save, and retrieve a cart via fluent wrapper', function () { // Renamed test
+    // Arrange: Create a cart using the manager (Facade), returns wrapper
+    $cartWrapper = Cart::create(userId: 'user-123', taxZone: 'RO');
+    $cartId = $cartWrapper->getId();
     expect($cartId)->toBeString();
 
-    // Act: Create a new cart instance (simulating a new request) and find the saved cart
-    // We need to resolve a new instance, not use the existing singleton state
-    $newCartInstance = app(\AndreiLungeanu\SimpleCart\SimpleCart::class);
-    $loadedCart = $newCartInstance->find($cartId); // Use find on the instance
+    // Act: Modify the cart using fluent methods on the wrapper
+    $cartWrapper->addItem(new CartItemDTO(id: 'prod-abc', name: 'Test Product prod-abc', quantity: 2, price: 50.00))
+        ->addNote('Persistence test note')
+        ->applyDiscount(new DiscountDTO(code: 'SAVE10', type: 'fixed', value: 10.0))
+        ->setShippingMethod('standard', ['vat_included' => false])
+        ->setVatExempt(false); // Example: Explicitly set VAT status
+
+    // Retrieve the cart instance again using the manager/wrapper
+    $loadedCartWrapper = Cart::find($cartId); // Use find via Facade, returns wrapper
+    $loadedCart = $loadedCartWrapper->getInstance(); // Get the underlying instance
 
     // Assert: Check if the loaded cart state matches the saved state
-    $cartDataAfter = $loadedCart->get(); // Get data from the loaded instance
-
-    expect($cartDataAfter['id'])->toBe($cartId)
-        ->and($cartDataAfter['user_id'])->toBe('user-123')
-        ->and($cartDataAfter['tax_zone'])->toBe('RO')
-        ->and($cartDataAfter['shipping_method'])->toBe('standard')
-        ->and($cartDataAfter['items'])->toHaveCount(1)
-        ->and($cartDataAfter['items'][0]['id'])->toBe('prod-abc')
-        ->and($cartDataAfter['items'][0]['quantity'])->toBe(2)
-        ->and($cartDataAfter['notes'])->toHaveCount(1)
-        ->and($cartDataAfter['notes'][0])->toBe('Persistence test note')
-        ->and($cartDataAfter['discounts'])->toHaveCount(1)
-        ->and($cartDataAfter['discounts'][0]['code'])->toBe('SAVE10');
-    // We don't assert calculated values (like total) as they aren't persisted
+    expect($loadedCart)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\CartInstance::class)
+        ->and($loadedCart->getId())->toBe($cartId)
+        ->and($loadedCart->getUserId())->toBe('user-123')
+        ->and($loadedCart->getTaxZone())->toBe('RO')
+        ->and($loadedCart->getShippingMethod())->toBe('standard')
+        ->and($loadedCart->isVatExempt())->toBeFalse()
+        ->and($loadedCart->getItems())->toHaveCount(1)
+        ->and($loadedCart->getItems()->first()->id)->toBe('prod-abc')
+        ->and($loadedCart->getItems()->first()->quantity)->toBe(2)
+        ->and($loadedCart->getNotes())->toHaveCount(1)
+        ->and($loadedCart->getNotes()->first())->toBe('Persistence test note')
+        ->and($loadedCart->getDiscounts())->toHaveCount(1)
+        ->and($loadedCart->getDiscounts()->first()->code)->toBe('SAVE10');
 });
 
-test('saving updates an existing cart', function () {
-    // Arrange: Create and save a cart
-    Cart::create(userId: 'user-xyz')
-        ->addItem(new CartItemDTO(id: 'item-initial', name: 'Test Product item-initial', quantity: 1, price: 10.00))
-        ->save();
-    $cartId = Cart::get()['id'];
+test('fluent wrapper methods update an existing cart', function () { // Renamed test
+    // Arrange: Create a cart and add an initial item using the wrapper
+    $cartWrapper = Cart::create(userId: 'user-xyz');
+    $cartWrapper->addItem(new CartItemDTO(id: 'item-initial', name: 'Test Product item-initial', quantity: 1, price: 10.00));
 
-    // Act: Find the cart, modify it, and save again
-    $cartInstance = app(\AndreiLungeanu\SimpleCart\SimpleCart::class)->find($cartId);
-    $cartInstance
-        ->addItem(new CartItemDTO(id: 'item-added', name: 'Test Product item-added', quantity: 1, price: 20.00))
-        ->updateQuantity('item-initial', 5)
-        ->save();
+    // Act: Use fluent methods on the wrapper to modify the cart
+    $cartWrapper->addItem(new CartItemDTO(id: 'item-added', name: 'Test Product item-added', quantity: 1, price: 20.00))
+        ->updateQuantity('item-initial', 5);
 
     // Assert: Find the cart again and check the updated state
-    $newCartInstance = app(\AndreiLungeanu\SimpleCart\SimpleCart::class);
-    $loadedCart = $newCartInstance->find($cartId);
-    $cartDataAfter = $loadedCart->get();
+    $loadedCart = $cartWrapper->getInstance(); // Get instance from the same wrapper
+    $cartId = $cartWrapper->getId(); // Get the ID from the wrapper
 
-    expect($cartDataAfter['id'])->toBe($cartId)
-        ->and($cartDataAfter['user_id'])->toBe('user-xyz')
-        ->and($cartDataAfter['items'])->toHaveCount(2)
-        ->and($cartDataAfter['items'][0]['id'])->toBe('item-initial')
-        ->and($cartDataAfter['items'][0]['quantity'])->toBe(5)
-        ->and($cartDataAfter['items'][1]['id'])->toBe('item-added');
+    expect($loadedCart->getId())->toBe($cartId)
+        ->and($loadedCart->getUserId())->toBe('user-xyz')
+        ->and($loadedCart->getItems())->toHaveCount(2); // Should still have 2 distinct items
+
+    // Check quantities
+    $items = $loadedCart->getItems()->keyBy('id');
+    expect($items['item-initial']->quantity)->toBe(5)
+        ->and($items['item-added']->quantity)->toBe(1);
 });
 
-test('find throws exception for non-existent cart', function () {
+test('findOrFail throws exception for non-existent cart', function () {
     // Use a UUID that is unlikely to exist
     $nonExistentId = \Illuminate\Support\Str::uuid()->toString();
 
-    // Expect an exception when trying to find
-    expect(fn() => app(\AndreiLungeanu\SimpleCart\SimpleCart::class)->find($nonExistentId))
-        ->toThrow(CartException::class, "Cart with ID {$nonExistentId} not found.");
+    // Expect an exception when trying to findOrFail via Facade
+    // findOrFail now returns a FluentCart wrapper, but the exception logic remains
+    expect(fn() => Cart::findOrFail($nonExistentId))
+        ->toThrow(CartException::class, "Cart with ID [{$nonExistentId}] not found.");
+});
+
+test('find returns null for non-existent cart', function () {
+    // Use a UUID that is unlikely to exist
+    $nonExistentId = \Illuminate\Support\Str::uuid()->toString();
+
+    // Expect null when trying to find via Facade
+    $result = Cart::find($nonExistentId); // find now returns FluentCart|null
+    expect($result)->toBeNull();
 });

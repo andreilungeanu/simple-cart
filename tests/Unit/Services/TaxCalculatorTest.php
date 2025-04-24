@@ -45,7 +45,7 @@ beforeEach(function () {
 test('calculates tax based on zone', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'US'); // Use US zone
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'US'); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert: 100.00 * 0.0725 = 7.25
@@ -55,7 +55,7 @@ test('calculates tax based on zone', function () {
 test('returns zero tax for unknown zone', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'UNKNOWN');
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'UNKNOWN'); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert
@@ -65,7 +65,7 @@ test('returns zero tax for unknown zone', function () {
 test('applies category specific tax rates', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00, category: 'books')];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'RO');
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO'); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert: 100.00 * 0.05 = 5.00
@@ -78,7 +78,7 @@ test('handles mixed category tax rates', function () {
         new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00, category: 'books'), // Tax = 5.00
         new CartItemDTO(id: '2', name: 'Test Product 2', quantity: 1, price: 100.00), // Tax = 19.00
     ];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'RO');
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO'); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert: 5.00 + 19.00 = 24.00
@@ -88,7 +88,7 @@ test('handles mixed category tax rates', function () {
 test('applies default rate when category not specified', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)]; // No category
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'RO');
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO'); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert: 100.00 * 0.19 = 19.00
@@ -98,7 +98,7 @@ test('applies default rate when category not specified', function () {
 test('returns zero tax when cart is VAT exempt', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'RO', vatExempt: true); // Set exempt
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO', vatExempt: true); // Use correct helper name
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
     // Act & Assert

@@ -2,9 +2,18 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\SimpleCart;
+use AndreiLungeanu\SimpleCart\CartInstance; // Use CartInstance
 
+/**
+ * Interface for calculation services that operate on a CartInstance.
+ */
 interface Calculator
 {
-    public function calculate(SimpleCart $cart): float;
+    /**
+     * Perform a calculation based on the cart instance.
+     *
+     * @param CartInstance $cart The cart instance to calculate for.
+     * @return float The calculated value.
+     */
+    public function calculate(CartInstance $cart): float;
 }

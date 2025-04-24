@@ -2,7 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\CartInstance; // Use the new stateful class
+use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider; // Needed for Calculator
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
@@ -10,437 +11,471 @@ use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
+use AndreiLungeanu\SimpleCart\Repositories\CartRepository; // Keep interface import for reference/potential future use
+use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository; // Import concrete implementation
 use AndreiLungeanu\SimpleCart\Services\CartCalculator;
 use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Events\Dispatcher; // For dispatching events
 use Illuminate\Support\Str;
 
+/**
+ * Class SimpleCart (Manager)
+ * Provides a stateless API for interacting with CartInstances.
+ * This is the intended target for the SimpleCart Facade.
+ */
 class SimpleCart
 {
-    public string $id = '';
-    public ?string $userId = null;
-    public ?string $taxZone = null;
-    protected Collection $items;
-    protected Collection $discounts;
-    protected Collection $notes;
-    protected Collection $extraCosts;
-    private ?float $shippingVatRate = null;
-    private bool $shippingVatIncluded = false;
-    private bool $vatExempt = false;
-    protected ?string $currentShippingMethod = null;
-
+    // Note: Changed $repository type-hint to concrete DatabaseCartRepository
+    // due to type resolution issues in the testing environment.
+    // Ideally, this should be the CartRepository interface.
     public function __construct(
-        protected readonly CartRepository $repository,
+        protected readonly DatabaseCartRepository $repository, // Use concrete class type-hint
         protected readonly CartCalculator $calculator,
         protected readonly AddItemToCartAction $addItemAction,
-        string $id = '',
-        ?string $userId = null,
-        ?string $taxZone = null,
-        array $items = [],
-        array $discounts = [],
-        array $notes = [],
-        array $extraCosts = [],
-        ?string $shippingMethod = null,
-        bool $vatExempt = false,
-    ) {
-        $this->id = $id ?: (string) Str::uuid();
-        $this->userId = $userId;
-        $this->taxZone = $taxZone;
-        $this->items = collect($items)->map(fn($item) => $item instanceof CartItemDTO ? $item : new CartItemDTO(...$item));
-        $this->discounts = collect($discounts)->map(fn($discount) => $discount instanceof DiscountDTO ? $discount : new DiscountDTO(...$discount));
-        $this->notes = collect($notes);
-        $this->extraCosts = collect($extraCosts)->map(fn($cost) => $cost instanceof ExtraCostDTO ? $cost : new ExtraCostDTO(...$cost));
-        $this->currentShippingMethod = $shippingMethod;
-        $this->vatExempt = $vatExempt;
-    }
+        protected readonly Dispatcher $events // Inject the event dispatcher
+        // Add other actions/services as needed
+    ) {}
 
-    public function create(string $id = '', ?string $userId = null, ?string $taxZone = null): static
+    /**
+     * Find and retrieve a fluent wrapper for a cart instance by its ID.
+     *
+     * @param string $cartId
+     * @return FluentCart|null Returns wrapper if found, null otherwise.
+     */
+    public function find(string $cartId): ?FluentCart // Return FluentCart wrapper
     {
-        $this->id = $id ?: (string) Str::uuid();
-        $this->userId = $userId;
-        $this->taxZone = $taxZone;
-        $this->items = collect([]);
-        $this->discounts = collect([]);
-        $this->notes = collect([]);
-        $this->extraCosts = collect([]);
-        $this->shippingVatRate = null;
-        $this->shippingVatIncluded = false;
-        $this->vatExempt = false;
-        $this->currentShippingMethod = null;
+        // Check if cart exists in repository first
+        $cartInstance = $this->repository->find($cartId);
 
-        event(new CartCreated($this));
-
-        return $this;
+        // If found, return a new FluentCart wrapper for it
+        return $cartInstance ? new FluentCart($cartId) : null;
     }
 
     /**
-     * Add an item to the cart. Accepts a DTO instance or an associative array.
+     * Find a fluent wrapper for a cart instance by ID or throw an exception if not found.
      *
-     * @param CartItemDTO|array $item
-     * @return static
-     * @throws \InvalidArgumentException
+     * @param string $cartId
+     * @return FluentCart
+     * @throws CartException
      */
-    public function addItem(CartItemDTO|array $item): static
+    public function findOrFail(string $cartId): FluentCart // Return FluentCart wrapper
     {
-        $itemDTO = $item instanceof CartItemDTO ? $item : CartItemDTO::fromArray($item);
-
-        ($this->addItemAction)($this, $itemDTO);
-        return $this;
-    }
-
-    public function removeItem(string $itemId): static
-    {
-        $initialCount = $this->items->count();
-        $this->items = $this->items->filter(fn(CartItemDTO $item) => $item->id !== $itemId);
-
-        if ($this->items->count() < $initialCount) {
-            event(new CartUpdated($this));
+        $wrapper = $this->find($cartId); // Use the updated find method
+        if (! $wrapper) {
+            throw new CartException("Cart with ID [{$cartId}] not found.");
         }
-
-        return $this;
-    }
-
-    public function clear(): static
-    {
-        $this->id = (string) Str::uuid();
-        $this->userId = null;
-        $this->taxZone = null;
-        $this->items = collect([]);
-        $this->discounts = collect([]);
-        $this->notes = collect([]);
-        $this->extraCosts = collect([]);
-        $this->shippingVatRate = null;
-        $this->shippingVatIncluded = false;
-        $this->vatExempt = false;
-        $this->currentShippingMethod = null;
-
-        event(new CartCleared($this->id));
-
-        return $this;
-    }
-
-    public function get(): array
-    {
-        return [
-            'id' => $this->id,
-            'user_id' => $this->userId,
-            'tax_zone' => $this->taxZone,
-            'items' => $this->items->map(fn(CartItemDTO $item) => [
-                'id' => $item->id,
-                'name' => $item->name,
-                'price' => $item->price,
-                'quantity' => $item->quantity,
-                'category' => $item->category,
-                'metadata' => $item->metadata,
-            ])->values()->toArray(),
-            'discounts' => $this->discounts->map(fn(DiscountDTO $discount) => [
-                'code' => $discount->code,
-                'type' => $discount->type,
-                'value' => $discount->value,
-                'appliesTo' => $discount->appliesTo,
-                'minimumAmount' => $discount->minimumAmount,
-                'expiresAt' => $discount->expiresAt,
-            ])->toArray(),
-            'notes' => $this->notes->toArray(),
-            'extra_costs' => $this->extraCosts->map(fn(ExtraCostDTO $cost) => [
-                'name' => $cost->name,
-                'amount' => $cost->amount,
-                'type' => $cost->type,
-                'description' => $cost->description,
-                'vatRate' => $cost->vatRate,
-                'vatIncluded' => $cost->vatIncluded,
-            ])->toArray(),
-            'shipping_method' => $this->currentShippingMethod,
-            'vat_exempt' => $this->vatExempt,
-        ];
-    }
-
-    public function updateQuantity(string $itemId, int $quantity): static
-    {
-        if ($quantity <= 0) {
-            throw new \InvalidArgumentException('Quantity must be positive');
-        }
-
-        $updated = false;
-        $this->items = $this->items->map(function ($item) use ($itemId, $quantity, &$updated) {
-            if ($item->id === $itemId) {
-                $updated = true;
-                return $item->withQuantity($quantity);
-            }
-            return $item;
-        });
-
-        if (! $updated) {
-            throw new CartException("Item with ID {$itemId} not found in cart.");
-        }
-
-        event(new CartUpdated($this));
-
-        return $this;
+        return $wrapper;
     }
 
     /**
-     * Apply a discount to the cart. Accepts a DTO instance or an associative array.
+     * Create a new, empty cart instance.
      *
-     * @param DiscountDTO|array $discount
-     * @return static
-     * @throws \InvalidArgumentException
+     * @param string|null $cartId Provide an ID or let it be generated.
+     * @param string|null $userId Optional user ID.
+     * @param string|null $taxZone Optional tax zone.
+     * @return FluentCart A fluent wrapper for the newly created cart instance.
      */
-    public function applyDiscount(DiscountDTO|array $discount): static
+    public function create(?string $cartId = null, ?string $userId = null, ?string $taxZone = null): FluentCart // Return FluentCart wrapper
     {
-        $discountDTO = $discount instanceof DiscountDTO ? $discount : DiscountDTO::fromArray($discount);
+        $id = $cartId ?: (string) Str::uuid();
 
-        $this->discounts->push($discountDTO);
-        event(new CartUpdated($this));
-
-        return $this;
-    }
-
-    public function addNote(string $note): static
-    {
-        $this->notes->push($note);
-        event(new CartUpdated($this));
-
-        return $this;
-    }
-
-    public function save(): static
-    {
-        if (! $this->id) {
-            $this->id = (string) Str::uuid();
-        }
-
-        $cartData = [
-            'id' => $this->id,
-            'items' => $this->items->map(fn(CartItemDTO $item) => [
-                'id' => $item->id,
-                'name' => $item->name,
-                'price' => $item->price,
-                'quantity' => $item->quantity,
-                'category' => $item->category,
-                'metadata' => $item->metadata,
-            ])->toArray(),
-            'discounts' => $this->discounts->map(fn(DiscountDTO $discount) => [
-                'code' => $discount->code,
-                'type' => $discount->type,
-                'value' => $discount->value,
-                'appliesTo' => $discount->appliesTo,
-                'minimumAmount' => $discount->minimumAmount,
-                'expiresAt' => $discount->expiresAt,
-            ])->toArray(),
-            'notes' => $this->notes->toArray(),
-            'extra_costs' => $this->extraCosts->map(fn(ExtraCostDTO $cost) => [
-                'name' => $cost->name,
-                'amount' => $cost->amount,
-                'type' => $cost->type,
-                'description' => $cost->description,
-                'vatRate' => $cost->vatRate,
-                'vatIncluded' => $cost->vatIncluded,
-            ])->toArray(),
-            'user_id' => $this->userId,
-            'shipping_method' => $this->currentShippingMethod,
-            'tax_zone' => $this->taxZone,
-            'vat_exempt' => $this->vatExempt,
-        ];
-
-        $savedId = $this->repository->save($cartData);
-        $this->id = $savedId;
-
-        return $this;
-    }
-
-    public function find(string $id): static
-    {
-        $foundCartData = $this->repository->find($id);
-
-        if (! $foundCartData) {
-            $this->create();
-            $this->id = $id;
-            throw new CartException("Cart with ID {$id} not found.");
-        }
-
-        $this->id = $foundCartData['id'];
-        $this->userId = $foundCartData['user_id'] ?? null;
-        $this->taxZone = $foundCartData['tax_zone'] ?? null;
-        $this->currentShippingMethod = $foundCartData['shipping_method'] ?? null;
-        $this->vatExempt = $foundCartData['vat_exempt'] ?? false;
-
-        $this->items = collect($foundCartData['items'] ?? [])->map(fn($item) => $item instanceof CartItemDTO ? $item : new CartItemDTO(...$item));
-        $this->discounts = collect($foundCartData['discounts'] ?? [])->map(fn($discount) => $discount instanceof DiscountDTO ? $discount : new DiscountDTO(...$discount));
-        $this->notes = collect($foundCartData['notes'] ?? []);
-        $this->extraCosts = collect($foundCartData['extra_costs'] ?? [])->map(fn($cost) => $cost instanceof ExtraCostDTO ? $cost : new ExtraCostDTO(...$cost));
-
-        $this->shippingVatRate = null;
-        $this->shippingVatIncluded = false;
-
-        return $this;
-    }
-
-    public function total(): float
-    {
-        return $this->calculator->getTotal($this);
-    }
-
-    public function clone(): static
-    {
-        $clonedCart = new self(
-            repository: $this->repository,
-            calculator: $this->calculator,
-            addItemAction: $this->addItemAction,
-            id: (string) Str::uuid(),
-            userId: $this->userId,
-            taxZone: $this->taxZone,
-            items: $this->items->map(fn(CartItemDTO $item) => clone $item)->all(),
-            discounts: $this->discounts->map(fn(DiscountDTO $discount) => clone $discount)->all(),
-            notes: $this->notes->all(),
-            extraCosts: $this->extraCosts->map(fn(ExtraCostDTO $cost) => clone $cost)->all(),
-            shippingMethod: $this->currentShippingMethod,
-            vatExempt: $this->vatExempt
+        // Create a new CartInstance object - Constructor needs simplification later
+        // For now, we pass dummy dependencies which CartInstance constructor expects,
+        // but these won't actually be used by CartInstance once refactored.
+        // This highlights the need to refactor CartInstance constructor next.
+        // Corrected: Removed invalid arguments (repository, calculator, addItemAction)
+        $cart = new CartInstance(
+            id: $id,
+            userId: $userId,
+            taxZone: $taxZone
         );
 
-        $this->id = $clonedCart->id;
-        $this->userId = $clonedCart->userId;
-        $this->taxZone = $clonedCart->taxZone;
-        $this->items = $clonedCart->getItems();
-        $this->discounts = $clonedCart->getDiscounts();
-        $this->notes = $clonedCart->getNotes();
-        $this->extraCosts = $clonedCart->getExtraCosts();
-        $this->currentShippingMethod = $clonedCart->currentShippingMethod;
-        $this->vatExempt = $clonedCart->vatExempt;
-        $this->shippingVatRate = $clonedCart->shippingVatRate;
-        $this->shippingVatIncluded = $clonedCart->shippingVatIncluded;
+        // Persist the newly created cart
+        $this->repository->save($cart); // Repository needs to handle CartInstance
 
-        return $this;
-    }
+        // Dispatch event
+        $this->events->dispatch(new CartCreated($cart)); // Pass the CartInstance to the event
 
-    public function merge(SimpleCart $otherCart): static
-    {
-        foreach ($otherCart->getItems() as $item) {
-            if ($item instanceof CartItemDTO) {
-                $this->items->push(clone $item);
-            }
-        }
-
-        foreach ($otherCart->getDiscounts() as $discount) {
-            if ($discount instanceof DiscountDTO) {
-                $this->discounts->push(clone $discount);
-            }
-        }
-
-        event(new CartUpdated($this));
-
-        return $this;
+        // Return a FluentCart wrapper for the new cart
+        return new FluentCart($id);
     }
 
     /**
-     * Add an extra cost to the cart. Accepts a DTO instance or an associative array.
+     * Add an item to a specific cart.
      *
-     * @param ExtraCostDTO|array $cost
-     * @return static
-     * @throws \InvalidArgumentException
+     * @param string $cartId
+     * @param CartItemDTO|array $item
+     * @return CartInstance The updated cart instance.
+     * @throws CartException
      */
-    public function addExtraCost(ExtraCostDTO|array $cost): static
+    public function addItem(string $cartId, CartItemDTO|array $item): CartInstance
     {
-        $extraCostDTO = $cost instanceof ExtraCostDTO ? $cost : ExtraCostDTO::fromArray($cost);
-
-        $this->extraCosts->push($extraCostDTO);
-        event(new CartUpdated($this));
-        return $this;
-    }
-
-    public function setShippingMethod(string $method, array $shippingInfo): static
-    {
-        if (array_key_exists('vat_rate', $shippingInfo) && is_numeric($shippingInfo['vat_rate'])) {
-            if ($shippingInfo['vat_rate'] < 0 || $shippingInfo['vat_rate'] > 1) {
-                throw new \InvalidArgumentException('VAT rate must be between 0 and 1');
-            }
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for addItem.");
         }
 
-        $this->currentShippingMethod = $method;
-        $this->shippingVatRate = $shippingInfo['vat_rate'] ?? null;
-        $this->shippingVatIncluded = $shippingInfo['vat_included'] ?? false;
-        event(new CartUpdated($this));
-        return $this;
+        $itemDTO = $item instanceof CartItemDTO ? $item : CartItemDTO::fromArray($item);
+
+        // Delegate to the action, passing the CartInstance
+        $updatedCart = ($this->addItemAction)($cartInstance, $itemDTO);
+
+        // Persist changes
+        $this->repository->save($updatedCart);
+
+        // Dispatch event
+        $this->events->dispatch(new CartUpdated($updatedCart));
+
+        return $updatedCart;
     }
 
-    public function setVatExempt(bool $exempt = true): static
+    /**
+     * Remove an item from a specific cart.
+     *
+     * @param string $cartId
+     * @param string $itemId
+     * @return CartInstance The updated cart instance.
+     * @throws CartException
+     */
+    public function removeItem(string $cartId, string $itemId): CartInstance
     {
-        $this->vatExempt = $exempt;
-        event(new CartUpdated($this));
-        return $this;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for removeItem.");
+        }
+
+        $initialCount = $cartInstance->getItems()->count();
+        // Directly modify the CartInstance state
+        $cartInstance->removeItem($itemId); // Call method on CartInstance
+
+        if ($cartInstance->getItems()->count() < $initialCount) {
+            $this->repository->save($cartInstance);
+            $this->events->dispatch(new CartUpdated($cartInstance));
+        }
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    public function getSubtotal(): float
+    /**
+     * Update the quantity of an item in a specific cart.
+     *
+     * @param string $cartId
+     * @param string $itemId
+     * @param int $quantity
+     * @return CartInstance The updated cart instance.
+     * @throws CartException|\InvalidArgumentException
+     */
+    public function updateQuantity(string $cartId, string $itemId, int $quantity): CartInstance
     {
-        return $this->calculator->getSubtotal($this);
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be positive. Use removeItem to remove.');
+        }
+
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for updateQuantity.");
+        }
+
+        $cartInstance->updateQuantity($itemId, $quantity); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    public function getItemCount(): int
+    /**
+     * Clear all items, discounts, etc., from a specific cart.
+     *
+     * @param string $cartId
+     * @return CartInstance The cleared (but potentially still existing) cart instance.
+     * @throws CartException
+     */
+    public function clear(string $cartId): CartInstance
     {
-        return $this->calculator->getItemCount($this);
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for clear.");
+        }
+
+        $cartInstance->clear(); // Call method on CartInstance
+
+        $this->repository->save($cartInstance); // Save the cleared state
+        $this->events->dispatch(new CartCleared($cartId));
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    public function getShippingAmount(): float
+    /**
+     * Delete a cart entirely.
+     *
+     * @param string $cartId
+     * @return bool Success status from repository.
+     */
+    public function destroy(string $cartId): bool
     {
-        return $this->calculator->getShippingAmount($this);
+        // Optional: Dispatch an event before deleting?
+        $deleted = $this->repository->delete($cartId); // Repository needs a delete method
+        if ($deleted) {
+            // Optional: Dispatch event after successful delete
+            // $this->events->dispatch(new CartDestroyed($cartId));
+        }
+        return $deleted;
     }
 
-    public function getTaxAmount(): float
+    // --- Calculation Methods ---
+
+    /**
+     * Get the total value of a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function total(string $cartId): float
     {
-        return $this->calculator->getTaxAmount($this);
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for total calculation.");
+        }
+        return $this->calculator->getTotal($cartInstance);
     }
 
-    public function getDiscountAmount(): float
+    /**
+     * Get the subtotal value of a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function subtotal(string $cartId): float
     {
-        return $this->calculator->getDiscountAmount($this);
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for subtotal calculation.");
+        }
+        return $this->calculator->getSubtotal($cartInstance);
     }
 
-    public function getExtraCostsTotal(): float
+    /**
+     * Get the total tax amount for a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function taxAmount(string $cartId): float
     {
-        return $this->calculator->getExtraCostsTotal($this);
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for taxAmount calculation.");
+        }
+        return $this->calculator->getTaxAmount($cartInstance);
     }
 
-    public function getShippingMethod(): ?string
+    /**
+     * Get the total shipping amount for a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function shippingAmount(string $cartId): float
     {
-        return $this->currentShippingMethod;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for shippingAmount calculation.");
+        }
+        return $this->calculator->getShippingAmount($cartInstance);
     }
 
-    public function getShippingVatInfo(): array
+    /**
+     * Get the total discount amount for a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function discountAmount(string $cartId): float
     {
-        return [
-            'rate' => $this->shippingVatRate,
-            'included' => $this->shippingVatIncluded,
-        ];
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for discountAmount calculation.");
+        }
+        return $this->calculator->getDiscountAmount($cartInstance);
     }
 
-    public function isVatExempt(): bool
+    /**
+     * Get the total amount of extra costs for a specific cart.
+     *
+     * @param string $cartId
+     * @return float
+     * @throws CartException
+     */
+    public function extraCostsTotal(string $cartId): float
     {
-        return $this->vatExempt;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for extraCostsTotal calculation.");
+        }
+        return $this->calculator->getExtraCostsTotal($cartInstance);
     }
 
-    public function getItems(): Collection
+    /**
+     * Get the total number of items (sum of quantities) in a specific cart.
+     *
+     * @param string $cartId
+     * @return int
+     * @throws CartException
+     */
+    public function itemCount(string $cartId): int
     {
-        return $this->items;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for itemCount calculation.");
+        }
+        return $this->calculator->getItemCount($cartInstance);
     }
 
-    public function getDiscounts(): Collection
+    // --- Other Operations ---
+
+    /**
+     * Apply a discount to a specific cart.
+     *
+     * @param string $cartId
+     * @param DiscountDTO|array $discount
+     * @return CartInstance
+     * @throws CartException|\InvalidArgumentException
+     */
+    public function applyDiscount(string $cartId, DiscountDTO|array $discount): CartInstance
     {
-        return $this->discounts;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for applyDiscount.");
+        }
+
+        $discountDTO = $discount instanceof DiscountDTO ? $discount : DiscountDTO::fromArray($discount);
+        $cartInstance->applyDiscount($discountDTO); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    public function getNotes(): Collection
+    /**
+     * Add a note to a specific cart.
+     *
+     * @param string $cartId
+     * @param string $note
+     * @return CartInstance
+     * @throws CartException
+     */
+    public function addNote(string $cartId, string $note): CartInstance
     {
-        return $this->notes;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for addNote.");
+        }
+
+        $cartInstance->addNote($note); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    public function getExtraCosts(): Collection
+    /**
+     * Add an extra cost to a specific cart.
+     *
+     * @param string $cartId
+     * @param ExtraCostDTO|array $cost
+     * @return CartInstance
+     * @throws CartException|\InvalidArgumentException
+     */
+    public function addExtraCost(string $cartId, ExtraCostDTO|array $cost): CartInstance
     {
-        return $this->extraCosts;
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for addExtraCost.");
+        }
+
+        $extraCostDTO = $cost instanceof ExtraCostDTO ? $cost : ExtraCostDTO::fromArray($cost);
+        $cartInstance->addExtraCost($extraCostDTO); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
     }
 
-    protected function findItem(string $itemId): ?CartItemDTO
+    /**
+     * Set the shipping method and related info for a specific cart.
+     *
+     * @param string $cartId
+     * @param string $method
+     * @param array $shippingInfo (e.g., ['vat_rate' => 0.19, 'vat_included' => false])
+     * @return CartInstance
+     * @throws CartException|\InvalidArgumentException
+     */
+    public function setShippingMethod(string $cartId, string $method, array $shippingInfo): CartInstance
     {
-        return $this->items->first(fn($item) => $item->id === $itemId);
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for setShippingMethod.");
+        }
+
+        $cartInstance->setShippingMethod($method, $shippingInfo); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
     }
+
+    /**
+     * Set the VAT exemption status for a specific cart.
+     *
+     * @param string $cartId
+     * @param bool $exempt
+     * @return CartInstance
+     * @throws CartException
+     */
+    public function setVatExempt(string $cartId, bool $exempt = true): CartInstance
+    {
+        // Fetch CartInstance directly from repository
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for setVatExempt.");
+        }
+
+        $cartInstance->setVatExempt($exempt); // Call method on CartInstance
+
+        $this->repository->save($cartInstance);
+        $this->events->dispatch(new CartUpdated($cartInstance));
+
+        return $cartInstance; // Return the modified CartInstance
+    }
+
+    // Add merge, clone methods if needed, they would orchestrate loading/saving instances.
+    // Example:
+    // public function merge(string $targetCartId, string $sourceCartId): CartInstance { ... }
+    // public function clone(string $sourceCartId, ?string $newCartId = null): CartInstance { ... }
+
 }

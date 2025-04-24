@@ -9,13 +9,15 @@ A flexible shopping cart implementation for Laravel with support for multiple di
 
 ## Features
 
-- Fluent interface for easy cart management.
+- Stateless manager accessed via `SimpleCart` Facade for safe interaction.
+- **Fluent interface** for easy cart modification after creating or finding a cart.
+- Manages cart state via `CartInstance` objects (used internally).
 - Flexible tax calculation supporting multiple zones, categories, and VAT exemption.
 - Configurable shipping methods and costs, including free shipping thresholds.
 - Support for various discount types (e.g., fixed amount, percentage).
 - Ability to add extra costs (e.g., gift wrapping, handling fees).
-- Multiple persistence drivers (database, session - database default).
-- Automatic calculation and storage of cart totals.
+- Database persistence driver.
+- Calculation of cart totals via dedicated manager methods.
 - Event-driven architecture (`CartCreated`, `CartUpdated`, `CartCleared`).
 - Comprehensive test suite.
 
@@ -32,7 +34,7 @@ php artisan vendor:publish --tag="simple-cart-config"
 ```
 This will create `config/simple-cart.php`.
 
-Publish the migration file (if using the default 'database' driver):
+Publish and run the migration file:
 ```bash
 php artisan vendor:publish --tag="simple-cart-migrations"
 php artisan migrate
@@ -40,7 +42,7 @@ php artisan migrate
 
 ## Usage Examples
 
-All examples use the `SimpleCart` facade, providing a fluent interface. The cart state is automatically persisted based on your configuration.
+Use the `SimpleCart` facade to `create` or `find` a cart. These methods return a cart object that allows you to chain modification methods fluently. Calculation methods (`total`, `subtotal`, etc.) are called on the main `SimpleCart` Facade, passing the specific cart ID.
 
 ### Basic Operations
 
@@ -48,44 +50,46 @@ All examples use the `SimpleCart` facade, providing a fluent interface. The cart
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 
-// Get the current cart (or create a new one if none exists)
-$cart = SimpleCart::get(); // Returns the Cart model instance
+// Create a new cart instance (returns an object for chaining)
+$cart = SimpleCart::create(userId: 'user-123', taxZone: 'RO');
+$cartId = $cart->getId(); // Get the unique ID
 
-// Add an item using an associative array (Recommended)
-// The array keys match the properties of CartItemDTO.
-SimpleCart::addItem([
-    'id' => 'prod_456',
-    'name' => 'Wireless Mouse',
-    'price' => 25.50,
-    'quantity' => 1
-]);
+// Chain methods on the cart object to modify it
+$cart->addItem([ // Add item using an array
+        'id' => 'prod_456',
+        'name' => 'Wireless Mouse',
+        'price' => 25.50,
+        'quantity' => 1
+     ])
+     ->addItem(new CartItemDTO( // Add item using DTO
+        id: 'prod_123',
+        name: 'Laptop Pro',
+        price: 1299.99,
+        quantity: 1
+     ))
+     ->updateQuantity('prod_123', 2) // Update quantity
+     ->removeItem('prod_456');
 
-// You can also use the CartItemDTO directly if preferred:
-SimpleCart::addItem(new CartItemDTO(
-    id: 'prod_123',
-    name: 'Laptop Pro',
-    price: 1299.99,
-    quantity: 1
-));
+// Get calculated values using the Facade and cart ID
+$subtotal = SimpleCart::subtotal($cartId);
+$total = SimpleCart::total($cartId);
+$itemCount = SimpleCart::itemCount($cartId);
+echo "Item Count: " . $itemCount;
+echo "Subtotal: " . $subtotal;
+echo "Total: " . $total;
 
-// Update an item's quantity
-SimpleCart::updateItem('prod_123', ['quantity' => 2]);
+// Retrieve the cart object later
+$loadedCart = SimpleCart::find($cartId); // Returns cart object or null
+if ($loadedCart) {
+    echo "Cart found: " . $loadedCart->getId();
+    // $cartInstance = $loadedCart->getInstance(); // Get underlying data if needed
+}
 
-// Remove an item
-SimpleCart::removeItem('prod_456');
+// Clear the cart's contents
+$loadedCart?->clear();
 
-// Get calculated totals
-$totals = SimpleCart::getTotals(); // Returns a TotalsDTO object
-echo "Subtotal: " . $totals->subtotal;
-echo "Total: " . $totals->total;
-
-// Get the full cart details (items, totals, etc.)
-$cartDetails = SimpleCart::get(); // Returns the Cart model instance with relations loaded
-// Access items: $cartDetails->items
-// Access totals: $cartDetails->totals (calculated on the fly if needed)
-
-// Clear the cart
-SimpleCart::clear();
+// Delete the cart entirely via the Facade
+SimpleCart::destroy($cartId);
 ```
 
 ### Tax Handling
@@ -94,34 +98,37 @@ SimpleCart::clear();
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 
-// Set tax zone (e.g., based on user's country) - uses 'default_zone' from config if not set
-SimpleCart::setTaxZone('RO'); // Use Romanian tax rules
+// Create cart with a specific tax zone
+$cart = SimpleCart::create(taxZone: 'RO');
 
-// Add items with different tax categories (defined in config) using arrays
-SimpleCart::addItem([
-    'id' => 'book_abc',
-    'name' => 'Programming Guide',
-    'price' => 45.00,
-    'quantity' => 1,
-    'category' => 'books' // Uses 5% VAT in RO zone
-]);
-SimpleCart::addItem([
-    'id' => 'elec_xyz',
-    'name' => 'Monitor',
-    'price' => 300.00,
-    'quantity' => 1 // Uses default 19% VAT in RO zone
-]);
+// Add items
+$cart->addItem([
+        'id' => 'book_abc',
+        'name' => 'Programming Guide',
+        'price' => 45.00,
+        'quantity' => 1,
+        'category' => 'books' // Uses 5% VAT in RO zone
+     ])
+     ->addItem([
+        'id' => 'elec_xyz',
+        'name' => 'Monitor',
+        'price' => 300.00,
+        'quantity' => 1 // Uses default 19% VAT in RO zone
+     ]);
 
-// Mark the cart as VAT exempt (e.g., for B2B)
-SimpleCart::setVatExempt(true);
-// Recalculate totals if needed, or it happens automatically on getTotals() / get()
+// Get tax amount using Facade and ID
+$tax = SimpleCart::taxAmount($cart->getId());
+echo "Tax Amount: " . $tax;
 
-// Get totals (VAT will be 0 if exempt)
-$totals = SimpleCart::getTotals();
-echo "Tax Amount: " . $totals->taxAmount; // 0.00 if VAT exempt
+// Mark the cart as VAT exempt
+$cart->setVatExempt(true);
+
+// Get tax amount again
+$taxAfterExempt = SimpleCart::taxAmount($cart->getId());
+echo "Tax Amount (Exempt): " . $taxAfterExempt; // 0.00
 
 // Unset VAT exemption
-SimpleCart::setVatExempt(false);
+$cart->setVatExempt(false);
 ```
 
 ### Shipping
@@ -129,26 +136,28 @@ SimpleCart::setVatExempt(false);
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 
-// Add items first...
-// SimpleCart::addItem(...);
+// Create cart and add items first...
+$cart = SimpleCart::create(taxZone: 'RO');
+// $cart->addItem(...);
 
-// Set the desired shipping method (key from config)
-SimpleCart::setShippingMethod('express'); // Uses 'express' settings from config
+// Set the desired shipping method
+$cart->setShippingMethod('express', ['vat_included' => false]);
 
-// Get totals including shipping
-$totals = SimpleCart::getTotals();
-echo "Shipping Cost: " . $totals->shippingAmount;
-echo "Total: " . $totals->total;
+// Get calculated shipping cost
+$shippingCost = SimpleCart::shippingAmount($cart->getId());
+echo "Shipping Cost: " . $shippingCost;
+
+// Get total including shipping
+$total = SimpleCart::total($cart->getId());
+echo "Total: " . $total;
 
 // Check if free shipping applies (based on 'free_shipping_threshold' in config)
-// Add items until subtotal exceeds threshold...
-$totals = SimpleCart::getTotals();
-if ($totals->shippingAmount == 0) {
+if ($shippingCost == 0) {
     echo "Free shipping applied!";
 }
 
-// Remove shipping selection
-SimpleCart::removeShippingMethod();
+// To remove shipping selection, set method to an empty string or null
+$cart->setShippingMethod('', []);
 ```
 
 ### Discounts
@@ -157,39 +166,33 @@ SimpleCart::removeShippingMethod();
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
 
-// Add items first...
-// SimpleCart::addItem(...);
+// Create cart and add items first...
+$cart = SimpleCart::create();
+// $cart->addItem(...);
 
-// Apply a fixed amount discount using an array (Recommended)
-// Keys match DiscountDTO properties. Use 'amount' for fixed, 'value' for percentage.
-SimpleCart::applyDiscount([
-    'code' => 'WELCOME10',
-    'type' => 'fixed',
-    'amount' => 10.00,
-    'description' => 'Welcome Offer'
-]);
+// Apply discounts
+$cart->applyDiscount([ // Apply using array
+        'code' => 'WELCOME10',
+        'type' => 'fixed',
+        'value' => 10.00, // Use 'value'
+     ])
+     ->applyDiscount(new DiscountDTO( // Apply using DTO
+        code: 'SUMMER20',
+        type: 'percentage',
+        value: 20.0 // 20%
+     ));
 
-// Apply a percentage discount using an array
-SimpleCart::applyDiscount([
-    'code' => 'SUMMER20',
-    'type' => 'percentage',
-    'value' => 20.0,
-    'description' => 'Summer Sale'
-]);
+// Get calculated discount amount using Facade and ID
+$discountAmount = SimpleCart::discountAmount($cart->getId());
+echo "Discount Amount: " . $discountAmount;
 
-// You can also use the DiscountDTO directly:
-// SimpleCart::applyDiscount(new DiscountDTO(...));
+// Get total including discounts
+$total = SimpleCart::total($cart->getId());
+echo "Total: " . $total;
 
-// Get totals including discounts
-$totals = SimpleCart::getTotals();
-echo "Discount Amount: " . $totals->discountAmount;
-echo "Total: " . $totals->total;
-
-// Remove a specific discount
-SimpleCart::removeDiscount('WELCOME10');
-
-// Clear all discounts
-SimpleCart::clearDiscounts();
+// To remove discounts, you currently need to find the cart instance,
+// modify its discounts collection, and save it via the repository,
+// or clear the entire cart. Dedicated methods might be added later.
 ```
 
 ### Extra Costs
@@ -198,44 +201,40 @@ SimpleCart::clearDiscounts();
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
 use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
 
-// Add items first...
-// SimpleCart::addItem(...);
+// Create cart and add items first...
+$cart = Cart::create(taxZone: 'RO');
+// $cart->addItem(...);
 
-// Add a fixed handling fee using an array (Recommended)
-// Keys match ExtraCostDTO properties. VAT applied based on cart's tax settings.
-SimpleCart::addExtraCost([
-    'name' => 'Handling Fee',
-    'amount' => 5.00,
-    'type' => 'fixed' // 'fixed' or 'percentage'
-]);
+// Add extra costs
+$cart->addExtraCost([ // Add using array
+        'name' => 'Handling Fee',
+        'amount' => 5.00,
+        'type' => 'fixed'
+     ])
+     ->addExtraCost(new ExtraCostDTO( // Add using DTO
+        name: 'Insurance',
+        amount: 1.5, // 1.5% of subtotal
+        type: 'percentage'
+     ))
+     ->addExtraCost([ // Add with specific VAT details
+        'name' => 'Gift Wrapping',
+        'amount' => 7.50,
+        'type' => 'fixed',
+        'vatRate' => 0.19,
+        'vatIncluded' => true
+     ]);
 
-// Add a percentage-based insurance cost using an array
-SimpleCart::addExtraCost([
-    'name' => 'Insurance',
-    'amount' => 1.5, // 1.5% of subtotal
-    'type' => 'percentage'
-]);
+// Get total extra costs amount using Facade and ID
+$extraCostsTotal = SimpleCart::extraCostsTotal($cart->getId());
+echo "Extra Costs Total: " . $extraCostsTotal;
 
-// Add gift wrapping using an array with specific VAT details
-SimpleCart::addExtraCost([
-    'name' => 'Gift Wrapping',
-    'amount' => 7.50,
-    'type' => 'fixed',
-    'vatRate' => 0.19, // Specific VAT rate for this cost
-    'vatIncluded' => true // Indicates the 7.50 already includes 19% VAT
-]);
+// Get total including extra costs
+$total = SimpleCart::total($cart->getId());
+echo "Total: " . $total;
 
-
-// Get totals including extra costs
-$totals = SimpleCart::getTotals();
-echo "Extra Costs Total: " . $totals->extraCostsAmount;
-echo "Total: " . $totals->total;
-
-// Remove a specific extra cost by name
-SimpleCart::removeExtraCost('Handling Fee');
-
-// Clear all extra costs
-SimpleCart::clearExtraCosts();
+// To remove extra costs, you currently need to find the cart instance,
+// modify its extra costs collection, and save it via the repository,
+// or clear the entire cart. Dedicated methods might be added later.
 ```
 
 ## Configuration (`config/simple-cart.php`)
@@ -245,25 +244,27 @@ SimpleCart::clearExtraCosts();
 
 use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository; // Default repository
 
 return [
     // Persistence settings
     'storage' => [
-        'driver' => env('CART_STORAGE_DRIVER', 'database'), // e.g., 'database', 'session'
-        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days in seconds
+        // 'driver' => 'database', // Only database driver is currently implemented via CartRepository binding
+        'repository' => DatabaseCartRepository::class, // Specify the repository implementation
+        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days in seconds (Note: TTL logic needs implementation in repository/cleanup job)
     ],
 
     // Tax calculation settings
     'tax' => [
         'provider' => DefaultTaxProvider::class, // Implement custom provider if needed
-        'default_zone' => env('CART_DEFAULT_TAX_ZONE', 'US'), // Default tax zone if not specified
+        'default_zone' => env('CART_DEFAULT_TAX_ZONE', 'US'), // Default tax zone if not specified via create()
         'settings' => [
             'zones' => [
                 // Example: United States configuration
                 'US' => [
                     'name' => 'United States',
                     'default_rate' => env('CART_US_TAX_RATE', 0.0725), // Default rate for US
-                    'apply_to_shipping' => false, // Apply tax to shipping cost?
+                    // 'apply_to_shipping' => false, // This logic is now handled within CartCalculator
                     'rates_by_category' => [ // Category-specific rates
                         'digital' => 0.0,
                         'food' => 0.03,
@@ -273,7 +274,7 @@ return [
                 'RO' => [
                     'name' => 'Romania',
                     'default_rate' => env('CART_RO_TAX_RATE', 0.19),
-                    'apply_to_shipping' => true,
+                    // 'apply_to_shipping' => true,
                     'rates_by_category' => [
                         'books' => 0.05,
                         'food' => 0.09,
@@ -294,14 +295,14 @@ return [
                 'standard' => [
                     'cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
                     'name' => 'Standard Shipping',
-                    'vat_included' => false, // Is the cost inclusive of VAT?
-                    'vat_rate' => null, // null = use cart's default VAT rate, specific rate otherwise
+                    // 'vat_included' => false, // This is now passed via setShippingMethod()
+                    'vat_rate' => null, // null = use cart's default VAT rate, specific rate otherwise (used by DefaultShippingProvider)
                 ],
                 // Example: Express shipping method
                 'express' => [
                     'cost' => env('CART_EXPRESS_SHIPPING_COST', 15.99),
                     'name' => 'Express Shipping',
-                    'vat_included' => false,
+                    // 'vat_included' => false,
                     'vat_rate' => null,
                 ],
                 // Add more methods as needed...
@@ -316,9 +317,9 @@ return [
 
 The package fires the following events, allowing you to hook into the cart lifecycle:
 
-- `AndreiLungeanu\SimpleCart\Events\CartCreated`: Fired when a new cart is created.
-- `AndreiLungeanu\SimpleCart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified.
-- `AndreiLungeanu\SimpleCart\Events\CartCleared`: Fired when the cart is cleared.
+- `AndreiLungeanu\SimpleCart\Events\CartCreated`: Fired when a new cart is created. Contains the `CartInstance`.
+- `AndreiLungeanu\SimpleCart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. Contains the updated `CartInstance`.
+- `AndreiLungeanu\SimpleCart\Events\CartCleared`: Fired when the cart is cleared. Contains the `cartId`.
 
 You can create listeners for these events as per standard Laravel event handling.
 

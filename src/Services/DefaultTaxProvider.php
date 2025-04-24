@@ -2,18 +2,21 @@
 
 namespace AndreiLungeanu\SimpleCart\Services;
 
+use AndreiLungeanu\SimpleCart\CartInstance; // Use CartInstance
 use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
-use AndreiLungeanu\SimpleCart\SimpleCart;
+// use AndreiLungeanu\SimpleCart\SimpleCart; // No longer used
 
 class DefaultTaxProvider implements TaxRateProvider
 {
-    public function getRate(SimpleCart $cart): float
+    // Update parameter type hint
+    public function getRate(CartInstance $cart): float
     {
-        if (! $cart->taxZone) {
-            return 0.0;
+        $taxZone = $cart->getTaxZone(); // Use getter
+        if (! $taxZone) {
+            return 0.0; // No zone, no default rate
         }
 
-        return $this->getRateForZone($cart->taxZone);
+        return $this->getRateForZone($taxZone);
     }
 
     public function getAvailableZones(): array
@@ -28,22 +31,17 @@ class DefaultTaxProvider implements TaxRateProvider
         return $zoneConfig['default_rate'] ?? 0.0;
     }
 
-    public function getRateForCategory(string $zone, string $category): ?float
+    // Update zone parameter type hint to match contract
+    public function getRateForCategory(?string $zone, string $category): ?float
     {
+        if (! $zone) {
+            return null; // No zone specified, cannot get category rate for a specific zone
+        }
+        // Use null-safe access for config
         $zoneConfig = config("simple-cart.tax.settings.zones.{$zone}");
 
         return $zoneConfig['rates_by_category'][$category] ?? null;
     }
 
-    protected function shouldApplyToShipping(string $zone): bool
-    {
-        $zoneConfig = $this->getAvailableZones()[$zone] ?? null;
-
-        return $zoneConfig['apply_to_shipping'] ?? false;
-    }
-
-    protected function calculate(SimpleCart $cart, float $rate): float
-    {
-        return $cart->getSubtotal() * $rate;
-    }
+    // Removed unused/misplaced methods: shouldApplyToShipping, calculate
 }
