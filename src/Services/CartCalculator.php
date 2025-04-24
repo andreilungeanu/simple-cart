@@ -115,4 +115,18 @@ class CartCalculator
     {
         return $this->taxRateProvider->getRate($cart);
     }
+
+    /**
+     * Check if free shipping is currently applied to the cart.
+     * This is typically true if a shipping method is selected AND
+     * the calculated shipping cost is zero (e.g., due to meeting a threshold).
+     *
+     * @param CartInstance $cart
+     * @return bool
+     */
+    public function isFreeShippingApplied(CartInstance $cart): bool
+    {
+        // Free shipping requires a method to be set and the cost to be zero
+        return $cart->getShippingMethod() !== null && $this->getShippingAmount($cart) === 0.0;
+    }
 }

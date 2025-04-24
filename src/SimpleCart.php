@@ -339,6 +339,22 @@ class SimpleCart
         return $this->calculator->getItemCount($cartInstance);
     }
 
+    /**
+     * Check if free shipping is applied to a specific cart.
+     *
+     * @param string $cartId
+     * @return bool
+     * @throws CartException
+     */
+    public function isFreeShippingApplied(string $cartId): bool
+    {
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for isFreeShippingApplied check.");
+        }
+        return $this->calculator->isFreeShippingApplied($cartInstance);
+    }
+
     // --- Other Operations ---
 
     /**

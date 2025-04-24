@@ -151,8 +151,8 @@ echo "Shipping Cost: " . $shippingCost;
 $total = SimpleCart::total($cart->getId());
 echo "Total: " . $total;
 
-// Check if free shipping applies (based on 'free_shipping_threshold' in config)
-if ($shippingCost == 0) {
+// Check if free shipping was applied
+if (SimpleCart::isFreeShippingApplied($cart->getId())) {
     echo "Free shipping applied!";
 }
 
