@@ -2,8 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
-use AndreiLungeanu\SimpleCart\CartInstance; // Use the new stateful class
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider; // Needed for Calculator
+use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
@@ -11,11 +11,11 @@ use AndreiLungeanu\SimpleCart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository; // Keep interface import for reference/potential future use
-use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository; // Import concrete implementation
+use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
+use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository;
 use AndreiLungeanu\SimpleCart\Services\CartCalculator;
 use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
-use Illuminate\Contracts\Events\Dispatcher; // For dispatching events
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 
 /**
@@ -25,15 +25,11 @@ use Illuminate\Support\Str;
  */
 class SimpleCart
 {
-    // Note: Changed $repository type-hint to concrete DatabaseCartRepository
-    // due to type resolution issues in the testing environment.
-    // Ideally, this should be the CartRepository interface.
     public function __construct(
-        protected readonly DatabaseCartRepository $repository, // Use concrete class type-hint
+        protected readonly DatabaseCartRepository $repository,
         protected readonly CartCalculator $calculator,
         protected readonly AddItemToCartAction $addItemAction,
-        protected readonly Dispatcher $events // Inject the event dispatcher
-        // Add other actions/services as needed
+        protected readonly Dispatcher $events
     ) {}
 
     /**
@@ -218,12 +214,7 @@ class SimpleCart
      */
     public function destroy(string $cartId): bool
     {
-        // Optional: Dispatch an event before deleting?
-        $deleted = $this->repository->delete($cartId); // Repository needs a delete method
-        if ($deleted) {
-            // Optional: Dispatch event after successful delete
-            // $this->events->dispatch(new CartDestroyed($cartId));
-        }
+        $deleted = $this->repository->delete($cartId);
         return $deleted;
     }
 
@@ -472,10 +463,4 @@ class SimpleCart
 
         return $cartInstance; // Return the modified CartInstance
     }
-
-    // Add merge, clone methods if needed, they would orchestrate loading/saving instances.
-    // Example:
-    // public function merge(string $targetCartId, string $sourceCartId): CartInstance { ... }
-    // public function clone(string $sourceCartId, ?string $newCartId = null): CartInstance { ... }
-
 }

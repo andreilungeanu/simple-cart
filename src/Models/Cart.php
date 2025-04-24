@@ -4,8 +4,8 @@ namespace AndreiLungeanu\SimpleCart\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids; // Import the HasUuids trait if using Laravel 9+
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Optional: Add if using factories
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * @property string $id
@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory; // Optional: Add if using
  * @property array $notes
  * @property array $extra_costs
  * @property ?string $shipping_method
+ * @property ?float $shipping_vat_rate
+ * @property bool $shipping_vat_included
  * @property ?string $tax_zone
  * @property bool $vat_exempt
  * @property ?float $tax_amount
@@ -38,6 +40,9 @@ class Cart extends Model
         'discounts' => 'array',
         'notes' => 'array',
         'extra_costs' => 'array',
+        'vat_exempt' => 'boolean',
+        'shipping_vat_rate' => 'decimal:4',
+        'shipping_vat_included' => 'boolean',
         'tax_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',

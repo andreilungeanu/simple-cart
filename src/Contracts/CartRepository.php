@@ -2,7 +2,7 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\CartInstance; // Import the new stateful class
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 interface CartRepository
 {

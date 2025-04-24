@@ -2,7 +2,7 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\CartInstance; // Use CartInstance
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 /**
  * Interface for services that provide tax rates.

@@ -20,10 +20,8 @@ class FluentCart
 
     /**
      * The cart repository instance.
-     * Note: Type-hint changed to concrete DatabaseCartRepository due to
-     * type resolution issues in the testing environment.
      */
-    protected Repositories\DatabaseCartRepository $repository; // Use concrete class
+    protected Repositories\DatabaseCartRepository $repository;
 
     /**
      * Create a new fluent cart wrapper instance.
@@ -36,9 +34,7 @@ class FluentCart
         ?Application $app = null
     ) {
         $appInstance = $app ?? app();
-        // Resolve the manager and repository instances from the container
         $this->manager = $appInstance->make(SimpleCart::class);
-        // Resolve the concrete repository implementation directly
         $this->repository = $appInstance->make(Repositories\DatabaseCartRepository::class);
     }
 
@@ -161,18 +157,13 @@ class FluentCart
         return $this;
     }
 
-    // --- Calculation methods are NOT included on the wrapper ---
-    // --- Use the main Facade for calculations: SimpleCart::total($cartId) ---
-
     /**
      * Retrieve the underlying CartInstance data object.
-     * Note: Modifying this instance directly bypasses manager logic (events, persistence).
      *
      * @return CartInstance|null
      */
     public function getInstance(): ?CartInstance
     {
-        // Use the injected repository to find the actual CartInstance
         return $this->repository->find($this->cartId);
     }
 }

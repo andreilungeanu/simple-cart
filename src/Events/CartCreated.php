@@ -2,7 +2,7 @@
 
 namespace AndreiLungeanu\SimpleCart\Events;
 
-use AndreiLungeanu\SimpleCart\CartInstance; // Use CartInstance
+use AndreiLungeanu\SimpleCart\CartInstance;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

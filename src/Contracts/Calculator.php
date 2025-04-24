@@ -2,7 +2,7 @@
 
 namespace AndreiLungeanu\SimpleCart\Contracts;
 
-use AndreiLungeanu\SimpleCart\CartInstance; // Use CartInstance
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 /**
  * Interface for calculation services that operate on a CartInstance.
