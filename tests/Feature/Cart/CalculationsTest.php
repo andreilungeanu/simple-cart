@@ -122,3 +122,28 @@ test('extra costs are not taxed when cart is vat exempt', function () {
         ->and(Cart::taxAmount($cartId))->toBe(0.00)
         ->and(Cart::total($cartId))->toBe(115.00);
 });
+
+test('can remove an extra cost', function () {
+    $cartWrapper = Cart::create();
+    $cartId = $cartWrapper->getId();
+
+    $cartWrapper->addExtraCost(new ExtraCostDTO(name: 'Gift Wrap', amount: 5.00))
+        ->addExtraCost(new ExtraCostDTO(name: 'Handling', amount: 10.00));
+
+    expect(Cart::extraCostsTotal($cartId))->toBe(15.00);
+
+    // Remove 'Gift Wrap' using the fluent wrapper
+    $cartWrapper->removeExtraCost('Gift Wrap');
+
+    // Check totals and remaining costs
+    expect(Cart::extraCostsTotal($cartId))->toBe(10.00); // Only Handling remains
+    $loadedCart = $cartWrapper->getInstance();
+    expect($loadedCart->getExtraCosts())->toHaveCount(1)
+        ->and($loadedCart->getExtraCosts()->first()->name)->toBe('Handling');
+
+    // Remove the other cost
+    $cartWrapper->removeExtraCost('Handling');
+    expect(Cart::extraCostsTotal($cartId))->toBe(0.00);
+    $loadedCartAfter = $cartWrapper->getInstance();
+    expect($loadedCartAfter->getExtraCosts())->toBeEmpty();
+});

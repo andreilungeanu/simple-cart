@@ -155,6 +155,33 @@ class SimpleCart
     }
 
     /**
+     * Remove an extra cost from a specific cart by its name.
+     *
+     * @param string $cartId
+     * @param string $name The name of the extra cost to remove.
+     * @return CartInstance
+     * @throws CartException
+     */
+    public function removeExtraCost(string $cartId, string $name): CartInstance
+    {
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for removeExtraCost.");
+        }
+
+        $initialCount = $cartInstance->getExtraCosts()->count();
+        $cartInstance->removeExtraCost($name); // Call method on CartInstance
+
+        // Only save and dispatch event if a cost was actually removed
+        if ($cartInstance->getExtraCosts()->count() < $initialCount) {
+            $this->repository->save($cartInstance);
+            $this->events->dispatch(new CartUpdated($cartInstance));
+        }
+
+        return $cartInstance;
+    }
+
+    /**
      * Update the quantity of an item in a specific cart.
      *
      * @param string $cartId
