@@ -16,8 +16,8 @@ return new class extends Migration
             $table->json('notes')->nullable();
             $table->json('extra_costs')->nullable();
             $table->string('shipping_method')->nullable();
-            $table->decimal('shipping_vat_rate', 8, 4)->nullable(); // Add shipping VAT rate (e.g., 0.1900)
-            $table->boolean('shipping_vat_included')->default(false); // Add shipping VAT included flag
+            $table->decimal('shipping_vat_rate', 8, 4)->nullable();
+            $table->boolean('shipping_vat_included')->default(false);
             $table->string('tax_zone')->nullable();
             $table->boolean('vat_exempt')->default(false);
             $table->decimal('tax_amount', 10, 2)->default(0);

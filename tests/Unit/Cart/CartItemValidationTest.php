@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Cart;
 
-// Remove CartDTO import
 use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
 use InvalidArgumentException;
 
@@ -25,6 +24,3 @@ test('validates price is not greater than maximum allowed', function () {
         metadata: []
     ))->toThrow(InvalidArgumentException::class);
 });
-
-// Remove test for price precision/rounding - it tested CartDTO::getSubtotal which is removed.
-// Subtotal calculation is tested in Feature/Cart/CalculationsTest.php
