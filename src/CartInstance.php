@@ -242,6 +242,18 @@ class CartInstance
         return $this;
     }
 
+    /**
+     * Remove an extra cost by its name.
+     *
+     * @param string $name The name of the extra cost to remove.
+     * @return static
+     */
+    public function removeExtraCost(string $name): static
+    {
+        $this->extraCosts = $this->extraCosts->filter(fn(ExtraCostDTO $cost) => $cost->name !== $name);
+        return $this;
+    }
+
     public function setShippingMethod(string $method, array $shippingInfo): static
     {
         if (array_key_exists('vat_rate', $shippingInfo) && is_numeric($shippingInfo['vat_rate'])) {

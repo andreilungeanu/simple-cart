@@ -121,6 +121,18 @@ class FluentCart
     }
 
     /**
+     * Remove an extra cost from the cart by its name.
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function removeExtraCost(string $name): static
+    {
+        $this->manager->removeExtraCost($this->cartId, $name);
+        return $this;
+    }
+
+    /**
      * Add an extra cost to the cart.
      *
      * @param ExtraCostDTO|array $cost

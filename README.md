@@ -189,10 +189,6 @@ echo "Discount Amount: " . $discountAmount;
 // Get total including discounts
 $total = SimpleCart::total($cart->getId());
 echo "Total: " . $total;
-
-// To remove discounts, you currently need to find the cart instance,
-// modify its discounts collection, and save it via the repository,
-// or clear the entire cart. Dedicated methods might be added later.
 ```
 
 ### Extra Costs
@@ -232,9 +228,12 @@ echo "Extra Costs Total: " . $extraCostsTotal;
 $total = SimpleCart::total($cart->getId());
 echo "Total: " . $total;
 
-// To remove extra costs, you currently need to find the cart instance,
-// modify its extra costs collection, and save it via the repository,
-// or clear the entire cart. Dedicated methods might be added later.
+// Remove an extra cost by name
+$cart->removeExtraCost('Handling Fee');
+
+// Recalculate total
+$totalAfterRemove = SimpleCart::total($cart->getId());
+echo "Total after removing Handling Fee: " . $totalAfterRemove;
 ```
 
 ## Configuration (`config/simple-cart.php`)
