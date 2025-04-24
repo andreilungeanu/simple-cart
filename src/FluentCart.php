@@ -109,6 +109,18 @@ class FluentCart
     }
 
     /**
+     * Remove a discount from the cart by its code.
+     *
+     * @param string $code
+     * @return $this
+     */
+    public function removeDiscount(string $code): static
+    {
+        $this->manager->removeDiscount($this->cartId, $code);
+        return $this;
+    }
+
+    /**
      * Add a note to the cart.
      *
      * @param string $note

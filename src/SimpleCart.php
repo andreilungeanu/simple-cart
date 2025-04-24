@@ -155,6 +155,33 @@ class SimpleCart
     }
 
     /**
+     * Remove a discount from a specific cart by its code.
+     *
+     * @param string $cartId
+     * @param string $code The code of the discount to remove.
+     * @return CartInstance
+     * @throws CartException
+     */
+    public function removeDiscount(string $cartId, string $code): CartInstance
+    {
+        $cartInstance = $this->repository->find($cartId);
+        if (! $cartInstance) {
+            throw new CartException("Cart with ID [{$cartId}] not found for removeDiscount.");
+        }
+
+        $initialCount = $cartInstance->getDiscounts()->count();
+        $cartInstance->removeDiscount($code); // Call method on CartInstance
+
+        // Only save and dispatch event if a discount was actually removed
+        if ($cartInstance->getDiscounts()->count() < $initialCount) {
+            $this->repository->save($cartInstance);
+            $this->events->dispatch(new CartUpdated($cartInstance));
+        }
+
+        return $cartInstance;
+    }
+
+    /**
      * Remove an extra cost from a specific cart by its name.
      *
      * @param string $cartId

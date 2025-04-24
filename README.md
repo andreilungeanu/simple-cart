@@ -189,6 +189,13 @@ echo "Discount Amount: " . $discountAmount;
 // Get total including discounts
 $total = SimpleCart::total($cart->getId());
 echo "Total: " . $total;
+
+// Remove a discount by its code
+$cart->removeDiscount('WELCOME10');
+
+// Recalculate total
+$totalAfterRemove = SimpleCart::total($cart->getId());
+echo "Total after removing WELCOME10: " . $totalAfterRemove;
 ```
 
 ### Extra Costs
