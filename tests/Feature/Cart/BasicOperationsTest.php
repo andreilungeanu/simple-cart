@@ -173,6 +173,34 @@ test('can apply a discount code', function () {
     Event::assertDispatchedTimes(CartUpdated::class, 1);
 });
 
+test('can remove a discount code', function () {
+    Event::fake();
+    $discount1 = new DiscountDTO(code: 'TESTCODE1', type: 'fixed', value: 5.0);
+    $discount2 = new DiscountDTO(code: 'TESTCODE2', type: 'fixed', value: 10.0);
+
+    $cartWrapper = Cart::create();
+    $cartWrapper->applyDiscount($discount1)
+        ->applyDiscount($discount2);
+
+    $loadedCart = $cartWrapper->getInstance();
+    expect($loadedCart->getDiscounts())->toHaveCount(2);
+
+    // Remove TESTCODE1
+    $cartWrapper->removeDiscount('TESTCODE1');
+
+    $loadedCartAfterRemove = $cartWrapper->getInstance();
+    expect($loadedCartAfterRemove->getDiscounts())->toHaveCount(1)
+        ->and($loadedCartAfterRemove->getDiscounts()->first()->code)->toBe('TESTCODE2');
+
+    // Remove the other one
+    $cartWrapper->removeDiscount('TESTCODE2');
+    $loadedCartAfterRemoveAll = $cartWrapper->getInstance();
+    expect($loadedCartAfterRemoveAll->getDiscounts())->toBeEmpty();
+
+    // Events: apply(1), apply(1), remove(1), remove(1)
+    Event::assertDispatchedTimes(CartUpdated::class, 4);
+});
+
 test('can set vat exempt status', function () {
     Event::fake();
 

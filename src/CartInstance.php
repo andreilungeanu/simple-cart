@@ -166,6 +166,18 @@ class CartInstance
     }
 
     /**
+     * Remove a discount by its code.
+     *
+     * @param string $code The code of the discount to remove.
+     * @return static
+     */
+    public function removeDiscount(string $code): static
+    {
+        $this->discounts = $this->discounts->filter(fn(DiscountDTO $discount) => $discount->code !== $code);
+        return $this;
+    }
+
+    /**
      * Apply a discount to the cart. Accepts a DTO instance or an associative array.
      *
      * @param DiscountDTO|array $discount
