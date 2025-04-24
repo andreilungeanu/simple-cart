@@ -30,6 +30,29 @@ test('applies free shipping at threshold', function () {
     expect(Cart::shippingAmount($cartWrapper->getId()))->toBe(0.00);
 });
 
+test('isFreeShippingApplied returns true when threshold met', function () {
+    $cartWrapper = Cart::create(taxZone: 'RO');
+    $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', quantity: 1, price: 100.00)) // At threshold
+        ->setShippingMethod('standard', ['vat_included' => false]);
+
+    expect(Cart::isFreeShippingApplied($cartWrapper->getId()))->toBeTrue();
+});
+
+test('isFreeShippingApplied returns false when below threshold', function () {
+    $cartWrapper = Cart::create(taxZone: 'RO');
+    $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', quantity: 1, price: 90.00)) // Below threshold
+        ->setShippingMethod('standard', ['vat_included' => false]);
+
+    expect(Cart::isFreeShippingApplied($cartWrapper->getId()))->toBeFalse();
+});
+
+test('isFreeShippingApplied returns false when no shipping method set', function () {
+    $cartWrapper = Cart::create(taxZone: 'RO');
+    $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', quantity: 1, price: 150.00)); // Above threshold, but no method set
+
+    expect(Cart::isFreeShippingApplied($cartWrapper->getId()))->toBeFalse();
+});
+
 test('applies free shipping above threshold', function () {
     $cartWrapper = Cart::create(taxZone: 'RO');
     $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', quantity: 1, price: 150.00))
