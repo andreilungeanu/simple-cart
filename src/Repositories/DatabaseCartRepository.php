@@ -2,70 +2,121 @@
 
 namespace AndreiLungeanu\SimpleCart\Repositories;
 
-use AndreiLungeanu\SimpleCart\Models\Cart;
+use AndreiLungeanu\SimpleCart\Contracts\CartRepository; // Implement the contract
+use AndreiLungeanu\SimpleCart\Models\Cart as CartModel; // Use Eloquent model alias
+use AndreiLungeanu\SimpleCart\CartInstance; // Use the stateful object
 use Illuminate\Support\Str;
 
 class DatabaseCartRepository implements CartRepository
 {
-    public function find(string $id): ?array
+    /**
+     * Find a cart by its ID and return it as a CartInstance object.
+     *
+     * @param string $id The ID of the cart to find.
+     * @return CartInstance|null The found CartInstance or null if not found.
+     */
+    public function find(string $id): ?CartInstance
     {
-        $cart = Cart::find($id);
+        $cartModel = CartModel::find($id);
 
-        if (! $cart) {
+        if (! $cartModel) {
             return null;
         }
 
-        return [
-            'id' => $cart->id,
-            'items' => $cart->items ?? [],
-            'discounts' => $cart->discounts ?? [],
-            'notes' => $cart->notes ?? [],
-            'extra_costs' => $cart->extra_costs ?? [],
-            'user_id' => $cart->user_id,
-            'shipping_method' => $cart->shipping_method,
-            'tax_zone' => $cart->tax_zone,
-        ];
+        // Instantiate CartInstance from the Eloquent model data
+        // Assumes Eloquent model casts 'items', 'discounts', 'notes', 'extra_costs' to arrays
+        $cartInstance = new CartInstance( // Instantiate first
+            id: $cartModel->id,
+            userId: $cartModel->user_id,
+            taxZone: $cartModel->tax_zone,
+            items: $cartModel->items ?? [],
+            discounts: $cartModel->discounts ?? [],
+            notes: $cartModel->notes ?? [],
+            extraCosts: $cartModel->extra_costs ?? [],
+            shippingMethod: $cartModel->shipping_method,
+            vatExempt: $cartModel->vat_exempt ?? false,
+            // shippingVatRate and shippingVatIncluded are not in constructor
+        ); // $cartInstance is created here
+
+        // Manually set properties not handled by constructor after instantiation
+        $cartInstance->setShippingVatInfoInternal( // Call the setter on the created instance
+            $cartModel->shipping_vat_rate, // Load from DB
+            $cartModel->shipping_vat_included ?? false // Load from DB
+        );
+
+        return $cartInstance; // Return the instance *after* setting the properties
     }
 
-    public function save(array $cartData): string
+    /**
+     * Save the state of a CartInstance.
+     * Should handle both creation and updates.
+     *
+     * @param CartInstance $cartInstance The cart instance to save.
+     * @return string The ID of the saved cart.
+     */
+    public function save(CartInstance $cartInstance): string
     {
-        $id = $cartData['id'] ?? (string) Str::uuid();
+        $id = $cartInstance->getId(); // Get ID from the instance
 
+        // Extract data from CartInstance for persistence
+        // Assumes getters exist and return appropriate types (Collections need ->toArray())
         $dataToSave = [
             'id' => $id,
-            'items' => $cartData['items'] ?? [], // Let Eloquent casting handle encoding
-            'discounts' => $cartData['discounts'] ?? [], // Let Eloquent casting handle encoding
-            'notes' => $cartData['notes'] ?? [], // Let Eloquent casting handle encoding
-            'extra_costs' => $cartData['extra_costs'] ?? [], // Let Eloquent casting handle encoding
-            'user_id' => $cartData['user_id'] ?? null,
-            'shipping_method' => $cartData['shipping_method'] ?? null,
-            'tax_zone' => $cartData['tax_zone'] ?? null,
+            'items' => $cartInstance->getItems()->map(fn($item) => $item->toArray())->toArray(), // Assuming DTOs have toArray()
+            'discounts' => $cartInstance->getDiscounts()->map(fn($discount) => $discount->toArray())->toArray(), // Assuming DTOs have toArray()
+            'notes' => $cartInstance->getNotes()->toArray(),
+            'extra_costs' => $cartInstance->getExtraCosts()->map(fn($cost) => $cost->toArray())->toArray(), // Assuming DTOs have toArray()
+            'user_id' => $cartInstance->getUserId(),
+            'shipping_method' => $cartInstance->getShippingMethod(),
+            'tax_zone' => $cartInstance->getTaxZone(),
+            'vat_exempt' => $cartInstance->isVatExempt(),
+            // Persist shipping VAT info
+            'shipping_vat_rate' => $cartInstance->getShippingVatInfo()['rate'],
+            'shipping_vat_included' => $cartInstance->getShippingVatInfo()['included'],
         ];
 
-        Cart::updateOrCreate(['id' => $id], $dataToSave);
+        CartModel::updateOrCreate(['id' => $id], $dataToSave);
 
         return $id;
     }
 
-    public function delete(string $id): void
+    /**
+     * Delete a cart by its ID.
+     *
+     * @param string $id The ID of the cart to delete.
+     * @return bool True on success, false on failure.
+     */
+    public function delete(string $id): bool
     {
-        Cart::destroy($id);
+        // Cart::destroy returns the number of records deleted.
+        return CartModel::destroy($id) > 0;
     }
 
-    public function findByUser(string $userId): array
+    /**
+     * Find carts associated with a user ID.
+     * Note: This method is not part of the CartRepository interface.
+     *
+     * @param string $userId
+     * @return \Illuminate\Support\Collection<int, CartInstance> Collection of CartInstance objects.
+     */
+    public function findByUser(string $userId): \Illuminate\Support\Collection
     {
-        return Cart::where('user_id', $userId)
+        return CartModel::where('user_id', $userId)
             ->get()
-            ->map(fn(Cart $cart) => [
-                'id' => $cart->id,
-                'items' => $cart->items ?? [],
-                'user_id' => $cart->user_id,
-                'discounts' => $cart->discounts ?? [],
-                'notes' => $cart->notes ?? [],
-                'extra_costs' => $cart->extra_costs ?? [],
-                'shipping_method' => $cart->shipping_method,
-                'tax_zone' => $cart->tax_zone,
-            ])
-            ->toArray();
+            ->map(function (CartModel $cartModel) {
+                // Instantiate CartInstance from the Eloquent model data
+                return new CartInstance(
+                    id: $cartModel->id,
+                    userId: $cartModel->user_id,
+                    taxZone: $cartModel->tax_zone,
+                    items: $cartModel->items ?? [],
+                    discounts: $cartModel->discounts ?? [],
+                    notes: $cartModel->notes ?? [],
+                    extraCosts: $cartModel->extra_costs ?? [],
+                    shippingMethod: $cartModel->shipping_method,
+                    vatExempt: $cartModel->vat_exempt ?? false
+                );
+            });
+        // ->toArray(); // Remove toArray() to return a Collection of CartInstance
     }
 }

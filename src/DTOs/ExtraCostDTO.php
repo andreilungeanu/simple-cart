@@ -47,4 +47,21 @@ readonly class ExtraCostDTO
             vatIncluded: $data['vatIncluded'] ?? false,
         );
     }
+
+    /**
+     * Convert the DTO instance to an array.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'name' => $this->name,
+            'amount' => $this->amount,
+            'type' => $this->type,
+            'description' => $this->description,
+            'vatRate' => $this->vatRate,
+            'vatIncluded' => $this->vatIncluded,
+        ];
+    }
 }

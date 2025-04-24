@@ -1,12 +1,14 @@
 <?php
 
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO; // Import the DTO
-use AndreiLungeanu\SimpleCart\SimpleCart; // Import SimpleCart
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository; // For mocking helper
-use AndreiLungeanu\SimpleCart\Services\CartCalculator; // For mocking helper
-use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction; // For mocking helper
-// use Mockery; // For mocking helper - Not needed globally
+use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\CartInstance; // Import CartInstance instead of SimpleCart
+// Remove unused imports for mocking SimpleCart dependencies
+// use AndreiLungeanu\SimpleCart\SimpleCart;
+// use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
+// use AndreiLungeanu\SimpleCart\Services\CartCalculator;
+// use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
+use Mockery; // Keep Mockery if other helpers use it, or remove if not
 
 uses(TestCase::class)->in(__DIR__);
 
@@ -22,33 +24,32 @@ uses(TestCase::class)->in(__DIR__);
 // Removed createTestItem helper function as requested.
 
 /**
- * Helper function to create a SimpleCart instance with mocked dependencies
+ * Helper function to create a CartInstance with specific state
  * for testing providers/calculators in Unit tests.
  */
-function createTestCartInstance(
+function createCartInstanceForTesting(
     array $items = [],
     ?string $taxZone = null,
     bool $vatExempt = false,
-    ?string $shippingMethod = null
-): SimpleCart {
-    // Mock dependencies needed for SimpleCart constructor
-    $mockRepo = Mockery::mock(CartRepository::class);
-    $mockCalculator = Mockery::mock(CartCalculator::class);
-    // Mock getSubtotal as DefaultShippingProvider uses it
-    $subtotal = collect($items)->sum(fn($item) => $item->price * $item->quantity);
-    // Allow getSubtotal mock to be called multiple times if needed within a test
-    $mockCalculator->shouldReceive('getSubtotal')->zeroOrMoreTimes()->andReturn($subtotal);
+    ?string $shippingMethod = null,
+    ?string $userId = null, // Add other relevant state parameters if needed by tests
+    array $discounts = [],
+    array $notes = [],
+    array $extraCosts = [],
+    string $id = '' // Allow setting ID if needed
+): CartInstance { // Return CartInstance
+    // No need to mock dependencies for CartInstance constructor
 
-    $mockAction = Mockery::mock(AddItemToCartAction::class);
-
-    // Create SimpleCart instance with mocks and initial state
-    return new SimpleCart(
-        repository: $mockRepo,
-        calculator: $mockCalculator,
-        addItemAction: $mockAction,
-        items: $items,
+    // Create CartInstance directly with the desired state
+    return new CartInstance(
+        id: $id ?: \Illuminate\Support\Str::uuid()->toString(), // Generate ID if not provided
+        userId: $userId,
         taxZone: $taxZone,
-        vatExempt: $vatExempt,
-        shippingMethod: $shippingMethod
+        items: $items,
+        discounts: $discounts,
+        notes: $notes,
+        extraCosts: $extraCosts,
+        shippingMethod: $shippingMethod,
+        vatExempt: $vatExempt
     );
 }

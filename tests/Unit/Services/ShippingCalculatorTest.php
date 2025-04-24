@@ -40,7 +40,7 @@ test('calculates basic shipping cost', function () {
         new CartItemDTO(id: '2', name: 'Test Product 2', quantity: 1, price: 20.00), // 20.00 -> Subtotal 40.00 (below threshold)
     ];
     // Create cart instance with items and shipping method
-    $cart = createTestCartInstance(items: $cartItems, shippingMethod: 'standard');
+    $cart = createCartInstanceForTesting(items: $cartItems, shippingMethod: 'standard'); // Use correct helper name
 
     // Instantiate calculator with default provider
     $calculator = new ShippingCalculator(new DefaultShippingProvider);
@@ -55,7 +55,7 @@ test('calculates basic shipping cost', function () {
 test('applies free shipping threshold', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 150.00)]; // Above threshold
-    $cart = createTestCartInstance(items: $cartItems, shippingMethod: 'standard');
+    $cart = createCartInstanceForTesting(items: $cartItems, shippingMethod: 'standard'); // Use correct helper name
     $calculator = new ShippingCalculator(new DefaultShippingProvider);
 
     // Act & Assert
@@ -65,7 +65,7 @@ test('applies free shipping threshold', function () {
 test('shipping info includes VAT details', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 10.00)];
-    $cart = createTestCartInstance(items: $cartItems, shippingMethod: 'standard', taxZone: 'RO');
+    $cart = createCartInstanceForTesting(items: $cartItems, shippingMethod: 'standard', taxZone: 'RO'); // Use correct helper name
     $calculator = new ShippingCalculator(new DefaultShippingProvider);
 
     // Act
@@ -82,7 +82,7 @@ test('shipping info includes VAT details', function () {
 test('respects VAT exemption for shipping', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 10.00)];
-    $cart = createTestCartInstance(
+    $cart = createCartInstanceForTesting( // Use correct helper name
         items: $cartItems,
         shippingMethod: 'standard',
         taxZone: 'RO',
@@ -102,7 +102,7 @@ test('respects VAT exemption for shipping', function () {
 test('calculator uses provider to get shipping info', function () {
     // Arrange
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 10.00)];
-    $cart = createTestCartInstance(items: $cartItems, shippingMethod: 'express', taxZone: 'RO');
+    $cart = createCartInstanceForTesting(items: $cartItems, shippingMethod: 'express', taxZone: 'RO'); // Use correct helper name
 
     // Mock the provider
     $mockProvider = Mockery::mock(DefaultShippingProvider::class);

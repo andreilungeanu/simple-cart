@@ -13,6 +13,7 @@ use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use AndreiLungeanu\SimpleCart\Services\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\TaxCalculator;
+use Illuminate\Contracts\Events\Dispatcher; // Import Dispatcher contract
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -50,13 +51,19 @@ class SimpleCartServiceProvider extends PackageServiceProvider
             );
         });
 
-        $this->app->singleton('simple-cart', function ($app) {
+        // Bind the new stateless SimpleCart manager as a singleton
+        $this->app->singleton(SimpleCart::class, function ($app) {
             return new SimpleCart(
                 $app->make(CartRepository::class),
                 $app->make(CartCalculator::class),
-                $app->make(\AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction::class)
+                $app->make(\AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction::class),
+                $app->make(Dispatcher::class) // Inject the event dispatcher
+                // Add other action/service dependencies here if needed later
             );
         });
+
+        // Alias 'simple-cart' to the main class for the Facade/config access
+        $this->app->alias(SimpleCart::class, 'simple-cart');
     }
 
     public function packageBooted(): void

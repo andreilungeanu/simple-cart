@@ -52,9 +52,10 @@ class CartBenchmarkTest extends TestCase
     private function benchmarkAddItems(int $count): void
     {
         // Use Facade
-        Cart::create();
+        $cart = Cart::create();
+        $cartId = $cart->getId();
         for ($i = 0; $i < $count; $i++) {
-            Cart::addItem(new CartItemDTO(
+            Cart::addItem($cartId, new CartItemDTO( // Pass cartId
                 id: (string) $i,
                 name: "Product $i",
                 price: 10.00,
@@ -66,40 +67,46 @@ class CartBenchmarkTest extends TestCase
     private function benchmarkCalculateTotal(int $itemCount): void
     {
         // Use Facade and helper
-        $this->createCartWithItemsFacade($itemCount); // Use Facade helper
-        Cart::applyDiscount('TEST10');
-        Cart::total(); // Call total via Facade
+        $cartId = $this->createCartWithItemsFacade($itemCount); // Use Facade helper, get cartId
+        Cart::applyDiscount($cartId, new \AndreiLungeanu\SimpleCart\DTOs\DiscountDTO(code: 'TEST10', type: 'fixed', value: 1.0)); // Pass cartId and DTO
+        Cart::total($cartId); // Call total via Facade, pass cartId
     }
 
     private function benchmarkPersistence(int $itemCount): void
     {
         // Use Facade and helper
-        $this->createCartWithItemsFacade($itemCount); // Use Facade helper
-        Cart::save();
-        $cartData = Cart::get(); // Get array data
-        $cartId = $cartData['id']; // Get ID from array
-        // Resolve new instance to avoid singleton state for find
-        app(\AndreiLungeanu\SimpleCart\SimpleCart::class)->find($cartId);
+        $cartId = $this->createCartWithItemsFacade($itemCount); // Use Facade helper, get cartId
+        // Save is implicit in addItem, no explicit save needed via manager
+        // Find the cart instance
+        Cart::find($cartId); // Use find via Facade
     }
 
+    // This benchmark is less relevant now as get() is removed.
+    // We can benchmark finding and accessing properties instead.
     private function benchmarkGetArray(int $itemCount): void
     {
-        $this->createCartWithItemsFacade($itemCount);
-        Cart::get(); // Call get() via Facade
+        $cartId = $this->createCartWithItemsFacade($itemCount);
+        $cart = Cart::find($cartId); // Find the instance
+        // Access some properties or call getters if needed
+        $items = $cart->getItems();
+        $id = $cart->getId();
     }
 
     // Helper to create cart state using the Facade for benchmarks
-    private function createCartWithItemsFacade(int $count): void
+    // Returns the cart ID
+    private function createCartWithItemsFacade(int $count): string
     {
-        Cart::create(); // Use Facade
+        $cart = Cart::create(); // Use Facade
+        $cartId = $cart->getId();
         for ($i = 0; $i < $count; $i++) {
-            Cart::addItem(new CartItemDTO(
+            Cart::addItem($cartId, new CartItemDTO( // Pass cartId
                 id: (string) $i,
                 name: "Product $i",
                 price: 10.00,
                 quantity: 1
             ));
         }
+        return $cartId; // Return the ID
     }
 }
 
@@ -109,12 +116,13 @@ class CartBenchmarkTest extends TestCase
  * @group benchmark
  */
 test('cart add operations remain performant with many items', function () {
-    Cart::create(); // Use Facade
+    $cartWrapper = Cart::create(); // Use Facade, returns wrapper
+    $cartId = $cartWrapper->getId();
     $startTime = microtime(true);
 
     // Add 100 items
     for ($i = 0; $i < 100; $i++) {
-        Cart::addItem(new CartItemDTO( // Use Facade
+        $cartWrapper->addItem(new CartItemDTO( // Use wrapper
             id: (string) $i,
             name: "Product $i",
             price: 9.99,
@@ -128,18 +136,20 @@ test('cart add operations remain performant with many items', function () {
 
     // Basic check, specific time is environment dependent
     expect($duration)->toBeNumeric();
-    // Check state using Facade and array access
-    expect(Cart::get()['items'])->toHaveCount(100);
+    // Check state using find and getInstance
+    $loadedCartWrapper = Cart::find($cartId);
+    expect($loadedCartWrapper->getInstance()->getItems())->toHaveCount(100);
 })->group('benchmark');
 
 /**
  * @group benchmark
  */
 test('large cart calculation performance', function () {
-    Cart::create(taxZone: 'RO'); // Use Facade
+    $cartWrapper = Cart::create(taxZone: 'RO'); // Use Facade, returns wrapper
+    $cartId = $cartWrapper->getId();
     // Add 100 items
     for ($i = 0; $i < 100; $i++) {
-        Cart::addItem(new CartItemDTO( // Use Facade
+        $cartWrapper->addItem(new CartItemDTO( // Use wrapper
             id: (string) $i,
             name: "Product $i",
             price: 99.99,
@@ -149,7 +159,7 @@ test('large cart calculation performance', function () {
     }
 
     $startTime = microtime(true);
-    Cart::total(); // Use Facade
+    Cart::total($cartId); // Use Facade, pass cartId
     $endTime = microtime(true);
     $executionTime = ($endTime - $startTime) * 1000; // ms
 
@@ -161,11 +171,13 @@ test('large cart calculation performance', function () {
 /**
  * @group benchmark
  */
-test('cart get data array performance', function () {
-    Cart::create(taxZone: 'RO'); // Use Facade
+// Renamed test as get() is removed
+test('cart find and access performance', function () {
+    $cartWrapper = Cart::create(taxZone: 'RO'); // Use Facade, returns wrapper
+    $cartId = $cartWrapper->getId();
     // Add items with all features
     for ($i = 0; $i < 50; $i++) {
-        Cart::addItem(new CartItemDTO( // Use Facade
+        $cartWrapper->addItem(new CartItemDTO( // Use wrapper
             id: (string) $i,
             name: "Product $i",
             price: 99.99,
@@ -176,7 +188,8 @@ test('cart get data array performance', function () {
     }
 
     $startTime = microtime(true);
-    Cart::get(); // Use Facade get()
+    $loadedCartWrapper = Cart::find($cartId); // Use find via Facade, returns wrapper
+    $items = $loadedCartWrapper->getInstance()->getItems(); // Get instance then items
     $endTime = microtime(true);
     $duration = ($endTime - $startTime) * 1000; // ms
 

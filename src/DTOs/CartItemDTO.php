@@ -55,4 +55,21 @@ readonly class CartItemDTO
             metadata: $data['metadata'] ?? [],
         );
     }
+
+    /**
+     * Convert the DTO instance to an array.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'price' => $this->price,
+            'quantity' => $this->quantity,
+            'category' => $this->category,
+            'metadata' => $this->metadata,
+        ];
+    }
 }

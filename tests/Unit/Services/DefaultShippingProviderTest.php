@@ -24,10 +24,10 @@ test('shipping rate includes VAT information', function () {
     // Arrange
     $provider = new DefaultShippingProvider;
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 50.00)];
-    $cart = createTestCartInstance(items: $cartItems, taxZone: 'RO'); // Use helper
+    $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO'); // Use correct helper name
 
     // Act
-    $rate = $provider->getRate($cart, 'standard'); // Pass SimpleCart instance
+    $rate = $provider->getRate($cart, 'standard'); // Pass CartInstance instance
 
     // Assert
     expect($rate)
@@ -42,7 +42,7 @@ test('returns correct structure for available shipping methods', function () {
     // Arrange
     $provider = new DefaultShippingProvider;
     // Create an empty cart instance, state doesn't matter for getAvailableMethods
-    $cart = createTestCartInstance();
+    $cart = createCartInstanceForTesting(); // Use correct helper name
 
     // Set expected config for this test
     config([
