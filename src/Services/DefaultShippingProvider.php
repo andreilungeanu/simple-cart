@@ -3,7 +3,7 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
 
 class DefaultShippingProvider implements ShippingRateProvider
 {
