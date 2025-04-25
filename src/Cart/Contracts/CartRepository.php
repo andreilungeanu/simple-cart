@@ -1,6 +1,6 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Contracts;
+namespace AndreiLungeanu\SimpleCart\Cart\Contracts;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
 

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Shipping;
 
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart as Cart;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
 use InvalidArgumentException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

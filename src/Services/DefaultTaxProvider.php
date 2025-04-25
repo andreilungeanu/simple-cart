@@ -3,7 +3,7 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
 
 class DefaultTaxProvider implements TaxRateProvider
 {
@@ -19,7 +19,7 @@ class DefaultTaxProvider implements TaxRateProvider
 
     public function getAvailableZones(): array
     {
-        return config('simple-cart.tax.settings.zones');
+        return config('simple-cart.tax.settings.zones', []); // Added default empty array
     }
 
     protected function getRateForZone(string $zone): float
@@ -34,7 +34,11 @@ class DefaultTaxProvider implements TaxRateProvider
         if (! $zone) {
             return null;
         }
+        // Ensure config path exists before accessing nested keys
         $zoneConfig = config("simple-cart.tax.settings.zones.{$zone}");
+        if (!is_array($zoneConfig)) {
+            return null;
+        }
 
         return $zoneConfig['rates_by_category'][$category] ?? null;
     }

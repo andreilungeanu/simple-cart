@@ -2,13 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
-use AndreiLungeanu\SimpleCart\Services\TaxCalculator;
-use AndreiLungeanu\SimpleCart\SimpleCart;
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
-use AndreiLungeanu\SimpleCart\Services\CartCalculator;
-use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider; // Keep this
+use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator; // Updated namespace
 use Mockery;
 
 afterEach(function () {
@@ -34,7 +30,6 @@ beforeEach(function () {
         ],
     ]);
 });
-
 
 test('calculates tax based on zone', function () {
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];

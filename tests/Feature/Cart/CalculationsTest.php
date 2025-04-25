@@ -1,8 +1,8 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart as Cart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated DTO namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO; // Updated DTO namespace
 
 test('calculates subtotal correctly', function () {
     $cartWrapper = Cart::create();

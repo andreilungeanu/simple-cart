@@ -1,10 +1,10 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Listeners;
+namespace AndreiLungeanu\SimpleCart\Cart\Listeners;
 
-use AndreiLungeanu\SimpleCart\Events\CartCleared;
-use AndreiLungeanu\SimpleCart\Events\CartCreated;
-use AndreiLungeanu\SimpleCart\Events\CartUpdated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
 use Illuminate\Events\Dispatcher;
 
 class CartEventSubscriber

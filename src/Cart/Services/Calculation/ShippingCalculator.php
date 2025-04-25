@@ -1,13 +1,13 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Services;
+namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Contracts\Calculator;
-use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface; // Add specific interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 
-class ShippingCalculator implements Calculator
+class ShippingCalculator implements ShippingCalculatorInterface // Implement specific interface
 {
     public function __construct(
         protected ShippingRateProvider $provider
