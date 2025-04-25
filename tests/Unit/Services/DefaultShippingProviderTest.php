@@ -2,7 +2,7 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use Mockery;
 

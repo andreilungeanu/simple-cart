@@ -4,9 +4,9 @@ namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface; // Add interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
 
-class DiscountCalculator implements DiscountCalculatorInterface // Implement interface
+class DiscountCalculator implements DiscountCalculatorInterface
 {
     /**
      * Calculate the total discount amount for the cart.

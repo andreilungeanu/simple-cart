@@ -2,12 +2,11 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
-// Keep DTOs for type hints, remove others no longer directly used
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
-use AndreiLungeanu\SimpleCart\Exceptions\CartException; // Keep for findOrFail
+use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 
 /**
  * Class SimpleCart (Facade Target / Entry Point)
@@ -16,7 +15,7 @@ use AndreiLungeanu\SimpleCart\Exceptions\CartException; // Keep for findOrFail
 class SimpleCart
 {
     public function __construct(
-        protected readonly CartManagerInterface $cartManager // Inject the manager interface
+        protected readonly CartManagerInterface $cartManager
     ) {}
 
     /**
@@ -83,8 +82,6 @@ class SimpleCart
         return $this->cartManager->destroy($cartId);
     }
 
-    // --- Calculation Methods ---
-
     /**
      * Get the total value of a specific cart.
      */
@@ -148,8 +145,6 @@ class SimpleCart
     {
         return $this->cartManager->isFreeShippingApplied($cartId);
     }
-
-    // --- Other Operations ---
 
     /**
      * Apply a discount to a specific cart.

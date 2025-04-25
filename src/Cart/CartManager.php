@@ -5,25 +5,25 @@ namespace AndreiLungeanu\SimpleCart\Cart;
 use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\FluentCart;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository; // Already an interface
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface; // Use interface
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface; // Use interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
-use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 
 class CartManager implements CartManagerInterface
 {
     public function __construct(
-        protected readonly CartRepository $repository, // Keep interface
-        protected readonly CartCalculatorInterface $calculator, // Use interface
-        protected readonly AddItemToCartActionInterface $addItemAction, // Use interface
+        protected readonly CartRepository $repository,
+        protected readonly CartCalculatorInterface $calculator,
+        protected readonly AddItemToCartActionInterface $addItemAction,
         protected readonly Dispatcher $events
     ) {}
 
@@ -63,7 +63,6 @@ class CartManager implements CartManagerInterface
     {
         $id = $cartId ?: (string) Str::uuid();
 
-        // CartInstance constructor is simplified now (or will be soon)
         $cart = new CartInstance(
             id: $id,
             userId: $userId,
@@ -110,12 +109,10 @@ class CartManager implements CartManagerInterface
         $initialItems = $cartInstance->getItems();
         $initialCount = $initialItems->count();
 
-        // Filter items directly here
         $updatedItems = $initialItems->filter(fn(CartItemDTO $item) => $item->id !== $itemId);
 
-        // Only proceed if an item was actually removed
         if ($updatedItems->count() < $initialCount) {
-            $cartInstance->setItems($updatedItems); // Update the instance's items
+            $cartInstance->setItems($updatedItems);
             $this->repository->save($cartInstance);
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
@@ -137,12 +134,10 @@ class CartManager implements CartManagerInterface
             throw new CartException("Cart with ID [{$cartId}] not found for updateQuantity.");
         }
 
-        // Find the item and update its quantity
         $updated = false;
         $updatedItems = $cartInstance->getItems()->map(function (CartItemDTO $item) use ($itemId, $quantity, &$updated) {
             if ($item->id === $itemId) {
                 $updated = true;
-                // Assuming CartItemDTO has a withQuantity method or similar immutable update pattern
                 return $item->withQuantity($quantity);
             }
             return $item;
@@ -152,7 +147,7 @@ class CartManager implements CartManagerInterface
             throw new CartException("Item with ID {$itemId} not found in cart {$cartId} for updateQuantity.");
         }
 
-        $cartInstance->setItems($updatedItems); // Update the instance's items
+        $cartInstance->setItems($updatedItems);
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
 
@@ -171,12 +166,9 @@ class CartManager implements CartManagerInterface
 
         $discountDTO = $discount instanceof DiscountDTO ? $discount : DiscountDTO::fromArray($discount);
 
-        // Add discount to the instance's collection
         $discounts = $cartInstance->getDiscounts();
-        // Optional: Check if discount code already exists to prevent duplicates?
-        // For now, just add it.
         $discounts->push($discountDTO);
-        $cartInstance->setDiscounts($discounts); // Update the instance's discounts
+        $cartInstance->setDiscounts($discounts);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
@@ -197,12 +189,10 @@ class CartManager implements CartManagerInterface
         $initialDiscounts = $cartInstance->getDiscounts();
         $initialCount = $initialDiscounts->count();
 
-        // Filter discounts directly here
         $updatedDiscounts = $initialDiscounts->filter(fn(DiscountDTO $discount) => $discount->code !== $code);
 
-        // Only proceed if a discount was actually removed
         if ($updatedDiscounts->count() < $initialCount) {
-            $cartInstance->setDiscounts($updatedDiscounts); // Update the instance's discounts
+            $cartInstance->setDiscounts($updatedDiscounts);
             $this->repository->save($cartInstance);
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
@@ -222,11 +212,9 @@ class CartManager implements CartManagerInterface
 
         $extraCostDTO = $cost instanceof ExtraCostDTO ? $cost : ExtraCostDTO::fromArray($cost);
 
-        // Add extra cost to the instance's collection
         $extraCosts = $cartInstance->getExtraCosts();
-        // Optional: Check if cost name already exists?
         $extraCosts->push($extraCostDTO);
-        $cartInstance->setExtraCosts($extraCosts); // Update the instance's extra costs
+        $cartInstance->setExtraCosts($extraCosts);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
@@ -247,12 +235,10 @@ class CartManager implements CartManagerInterface
         $initialCosts = $cartInstance->getExtraCosts();
         $initialCount = $initialCosts->count();
 
-        // Filter extra costs directly here
         $updatedCosts = $initialCosts->filter(fn(ExtraCostDTO $cost) => $cost->name !== $name);
 
-        // Only proceed if a cost was actually removed
         if ($updatedCosts->count() < $initialCount) {
-            $cartInstance->setExtraCosts($updatedCosts); // Update the instance's extra costs
+            $cartInstance->setExtraCosts($updatedCosts);
             $this->repository->save($cartInstance);
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
@@ -270,10 +256,9 @@ class CartManager implements CartManagerInterface
             throw new CartException("Cart with ID [{$cartId}] not found for addNote.");
         }
 
-        // Add note to the instance's collection
         $notes = $cartInstance->getNotes();
         $notes->push($note);
-        $cartInstance->setNotes($notes); // Update the instance's notes
+        $cartInstance->setNotes($notes);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
@@ -291,19 +276,17 @@ class CartManager implements CartManagerInterface
             throw new CartException("Cart with ID [{$cartId}] not found for setShippingMethod.");
         }
 
-        // Validate shipping info (copied from old CartInstance method)
         if (array_key_exists('vat_rate', $shippingInfo) && is_numeric($shippingInfo['vat_rate'])) {
             if ($shippingInfo['vat_rate'] < 0 || $shippingInfo['vat_rate'] > 1) {
                 throw new \InvalidArgumentException('VAT rate must be between 0 and 1');
             }
         }
 
-        // Update the instance's internal properties using the internal setter
         $cartInstance->setShippingVatInfoInternal(
             $shippingInfo['vat_rate'] ?? null,
             $shippingInfo['vat_included'] ?? false
         );
-        $cartInstance->setShippingMethodInternal($method); // Use the new internal setter
+        $cartInstance->setShippingMethodInternal($method);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
@@ -321,7 +304,7 @@ class CartManager implements CartManagerInterface
             throw new CartException("Cart with ID [{$cartId}] not found for setVatExempt.");
         }
 
-        $cartInstance->setVatExemptInternal($exempt); // Use the new internal setter
+        $cartInstance->setVatExemptInternal($exempt);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartUpdated($cartInstance));
@@ -339,14 +322,13 @@ class CartManager implements CartManagerInterface
             throw new CartException("Cart with ID [{$cartId}] not found for clear.");
         }
 
-        // Reset collections and properties on the instance
         $cartInstance->setItems(collect([]));
         $cartInstance->setDiscounts(collect([]));
         $cartInstance->setNotes(collect([]));
         $cartInstance->setExtraCosts(collect([]));
         $cartInstance->setShippingMethodInternal(null);
         $cartInstance->setShippingVatInfoInternal(null, false);
-        $cartInstance->setVatExemptInternal(false); // Assuming false is the default
+        $cartInstance->setVatExemptInternal(false);
 
         $this->repository->save($cartInstance);
         $this->events->dispatch(new CartCleared($cartId));
@@ -364,9 +346,6 @@ class CartManager implements CartManagerInterface
         // TODO: Dispatch event after successful deletion?
         return $deleted;
     }
-
-    // --- Calculation Methods ---
-    // Delegating directly to the calculator service
 
     public function total(string $cartId): float
     {

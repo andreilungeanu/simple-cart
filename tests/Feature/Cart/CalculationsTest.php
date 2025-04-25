@@ -1,8 +1,8 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated DTO namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO; // Updated DTO namespace
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 
 test('calculates subtotal correctly', function () {
     $cartWrapper = Cart::create();
@@ -132,16 +132,13 @@ test('can remove an extra cost', function () {
 
     expect(Cart::extraCostsTotal($cartId))->toBe(15.00);
 
-    // Remove 'Gift Wrap' using the fluent wrapper
     $cartWrapper->removeExtraCost('Gift Wrap');
 
-    // Check totals and remaining costs
-    expect(Cart::extraCostsTotal($cartId))->toBe(10.00); // Only Handling remains
+    expect(Cart::extraCostsTotal($cartId))->toBe(10.00);
     $loadedCart = $cartWrapper->getInstance();
     expect($loadedCart->getExtraCosts())->toHaveCount(1)
         ->and($loadedCart->getExtraCosts()->first()->name)->toBe('Handling');
 
-    // Remove the other cost
     $cartWrapper->removeExtraCost('Handling');
     expect(Cart::extraCostsTotal($cartId))->toBe(0.00);
     $loadedCartAfter = $cartWrapper->getInstance();

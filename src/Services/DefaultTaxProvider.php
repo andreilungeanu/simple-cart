@@ -19,7 +19,7 @@ class DefaultTaxProvider implements TaxRateProvider
 
     public function getAvailableZones(): array
     {
-        return config('simple-cart.tax.settings.zones', []); // Added default empty array
+        return config('simple-cart.tax.settings.zones', []);
     }
 
     protected function getRateForZone(string $zone): float
@@ -34,7 +34,6 @@ class DefaultTaxProvider implements TaxRateProvider
         if (! $zone) {
             return null;
         }
-        // Ensure config path exists before accessing nested keys
         $zoneConfig = config("simple-cart.tax.settings.zones.{$zone}");
         if (!is_array($zoneConfig)) {
             return null;

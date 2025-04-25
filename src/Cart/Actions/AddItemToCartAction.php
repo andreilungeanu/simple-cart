@@ -4,9 +4,9 @@ namespace AndreiLungeanu\SimpleCart\Cart\Actions;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface; // Add interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
 
-class AddItemToCartAction implements AddItemToCartActionInterface // Implement interface
+class AddItemToCartAction implements AddItemToCartActionInterface
 {
     public function __construct() {}
 
@@ -23,17 +23,12 @@ class AddItemToCartAction implements AddItemToCartActionInterface // Implement i
         $existingItemIndex = $items->search(fn(CartItemDTO $item) => $item->id === $itemDTO->id);
 
         if ($existingItemIndex !== false) {
-            // Item exists, update quantity
             $existingItem = $items->get($existingItemIndex);
             $newQuantity = $existingItem->quantity + $itemDTO->quantity;
-            // Replace item with a new DTO instance having the updated quantity
             $items->put($existingItemIndex, $existingItem->withQuantity($newQuantity));
         } else {
-            // Item does not exist, add it
             $items->push($itemDTO);
         }
-        // No need to call setItems on $cart here, as the action modifies the collection directly.
-        // The CartManager will handle saving the modified CartInstance.
 
         return $cart;
     }

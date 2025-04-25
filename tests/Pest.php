@@ -1,8 +1,8 @@
 <?php
 
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
-use AndreiLungeanu\SimpleCart\CartInstance; // Keep this
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 uses(TestCase::class)->in(__DIR__);
 

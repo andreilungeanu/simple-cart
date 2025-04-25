@@ -6,17 +6,17 @@ use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface; // Add interface
-use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface; // Use interface for dependency
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface; // Use interface for dependency
-use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface; // Use interface for dependency
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
 
-class CartCalculator implements CartCalculatorInterface // Implement interface
+class CartCalculator implements CartCalculatorInterface
 {
     public function __construct(
-        protected ShippingCalculatorInterface $shippingCalculator, // Type hint interface
-        protected TaxCalculatorInterface $taxCalculator, // Type hint interface
-        protected DiscountCalculatorInterface $discountCalculator, // Type hint interface
+        protected ShippingCalculatorInterface $shippingCalculator,
+        protected TaxCalculatorInterface $taxCalculator,
+        protected DiscountCalculatorInterface $discountCalculator,
         protected TaxRateProvider $taxRateProvider
     ) {}
 
@@ -130,7 +130,6 @@ class CartCalculator implements CartCalculatorInterface // Implement interface
      */
     public function isFreeShippingApplied(CartInstance $cart): bool
     {
-        // Free shipping requires a method to be set and the cost to be zero
         return $cart->getShippingMethod() !== null && $this->getShippingAmount($cart) === 0.0;
     }
 }

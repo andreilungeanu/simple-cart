@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Cart;
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated DTO namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO; // Updated DTO namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO; // Updated DTO namespace
-use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException; // Updated Exception namespace
-use AndreiLungeanu\SimpleCart\CartInstance; // Add use statement
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\CartInstance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -27,7 +27,7 @@ test('can create, modify, save, and retrieve a cart via fluent wrapper', functio
     $loadedCartWrapper = Cart::find($cartId);
     $loadedCart = $loadedCartWrapper->getInstance();
 
-    expect($loadedCart)->toBeInstanceOf(CartInstance::class) // Use imported class
+    expect($loadedCart)->toBeInstanceOf(CartInstance::class)
         ->and($loadedCart->getId())->toBe($cartId)
         ->and($loadedCart->getUserId())->toBe('user-123')
         ->and($loadedCart->getTaxZone())->toBe('RO')
