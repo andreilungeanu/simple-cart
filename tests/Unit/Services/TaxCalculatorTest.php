@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider; // Keep this
-use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
 use Mockery;
 
 afterEach(function () {
@@ -70,7 +70,6 @@ test('applies default rate when category not specified', function () {
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
-
     expect($calculator->calculate($cart))->toBe(19.00);
 });
 
@@ -78,6 +77,5 @@ test('returns zero tax when cart is VAT exempt', function () {
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO', vatExempt: true);
     $calculator = new TaxCalculator(new DefaultTaxProvider);
-
     expect($calculator->calculate($cart))->toBe(0.0);
 });

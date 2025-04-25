@@ -3,10 +3,10 @@
 namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface; // Add specific interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
 
-class TaxCalculator implements TaxCalculatorInterface // Implement specific interface
+class TaxCalculator implements TaxCalculatorInterface
 {
     public function __construct(
         protected TaxRateProvider $provider

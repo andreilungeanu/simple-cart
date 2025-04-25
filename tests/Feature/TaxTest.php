@@ -1,7 +1,7 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated DTO namespace
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 
 beforeEach(function () {
     config([

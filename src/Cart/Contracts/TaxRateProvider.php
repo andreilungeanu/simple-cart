@@ -25,7 +25,7 @@ interface TaxRateProvider
      * @param string $category The item category identifier.
      * @return float|null The specific tax rate or null.
      */
-    public function getRateForCategory(?string $zone, string $category): ?float; // Made zone nullable
+    public function getRateForCategory(?string $zone, string $category): ?float;
 
     public function getAvailableZones(): array;
 }

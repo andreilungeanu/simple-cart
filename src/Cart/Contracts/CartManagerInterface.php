@@ -90,9 +90,6 @@ interface CartManagerInterface
      */
     public function destroy(string $cartId): bool;
 
-    // --- Calculation Methods ---
-    // These might stay in SimpleCart or move here depending on final design
-
     public function total(string $cartId): float;
     public function subtotal(string $cartId): float;
     public function taxAmount(string $cartId): float;

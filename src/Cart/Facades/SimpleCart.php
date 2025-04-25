@@ -3,7 +3,7 @@
 namespace AndreiLungeanu\SimpleCart\Cart\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface; // Use the manager interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 
 /**
  * @see \AndreiLungeanu\SimpleCart\SimpleCart
@@ -35,8 +35,6 @@ class SimpleCart extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        // Return the binding key for the CartManagerInterface
-        // as SimpleCart now delegates to the manager.
         return CartManagerInterface::class;
     }
 }

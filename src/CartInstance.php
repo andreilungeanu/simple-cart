@@ -2,7 +2,6 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
-// Note: No need to import Contracts/Events/Exceptions here as they are not directly used
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
@@ -11,7 +10,6 @@ use Illuminate\Support\Str;
 
 /**
  * Represents the state of a shopping cart instance.
- * Primarily acts as a data container after refactoring.
  */
 class CartInstance
 {
@@ -41,7 +39,6 @@ class CartInstance
         $this->id = $id ?: (string) Str::uuid();
         $this->userId = $userId;
         $this->taxZone = $taxZone;
-        // Map incoming arrays to DTOs if they aren't already
         $this->items = collect($items)->map(fn($item) => $item instanceof CartItemDTO ? $item : new CartItemDTO(...$item));
         $this->discounts = collect($discounts)->map(fn($discount) => $discount instanceof DiscountDTO ? $discount : new DiscountDTO(...$discount));
         $this->notes = collect($notes);
@@ -49,8 +46,6 @@ class CartInstance
         $this->currentShippingMethod = $shippingMethod;
         $this->vatExempt = $vatExempt;
     }
-
-    // --- Basic Getters ---
 
     public function getId(): string
     {
@@ -109,8 +104,6 @@ class CartInstance
     {
         return $this->items->first(fn(CartItemDTO $item) => $item->id === $itemId);
     }
-
-    // --- Internal Setters (Used by CartManager) ---
 
     /** @internal */
     public function setItems(Collection $items): void

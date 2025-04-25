@@ -2,8 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Performance;
 
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated DTO namespace
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart; // Updated Facade namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
 use Illuminate\Support\Benchmark;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,7 +51,7 @@ class CartBenchmarkTest extends TestCase
     private function benchmarkCalculateTotal(int $itemCount): void
     {
         $cartId = $this->createCartWithItemsFacade($itemCount);
-        Cart::applyDiscount($cartId, new \AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO(code: 'TEST10', type: 'fixed', value: 1.0)); // Updated DTO namespace
+        Cart::applyDiscount($cartId, new \AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO(code: 'TEST10', type: 'fixed', value: 1.0));
         Cart::total($cartId);
     }
 
@@ -65,8 +65,8 @@ class CartBenchmarkTest extends TestCase
     {
         $cartId = $this->createCartWithItemsFacade($itemCount);
         $cart = Cart::find($cartId);
-        $instance = $cart->getInstance(); // Get the underlying instance first
-        $items = $instance ? $instance->getItems() : collect([]); // Call getItems() on the instance
+        $instance = $cart->getInstance();
+        $items = $instance ? $instance->getItems() : collect([]);
         $id = $cart->getId();
     }
 
@@ -75,7 +75,7 @@ class CartBenchmarkTest extends TestCase
         $cart = Cart::create();
         $cartId = $cart->getId();
         for ($i = 0; $i < $count; $i++) {
-            Cart::addItem($cartId, new CartItemDTO( // DTO namespace already updated via use statement
+            Cart::addItem($cartId, new CartItemDTO(
                 id: (string) $i,
                 name: "Product $i",
                 price: 10.00,
@@ -95,7 +95,7 @@ test('cart add operations remain performant with many items', function () {
     $startTime = microtime(true);
 
     for ($i = 0; $i < 100; $i++) {
-        $cartWrapper->addItem(new CartItemDTO( // DTO namespace already updated via use statement
+        $cartWrapper->addItem(new CartItemDTO(
             id: (string) $i,
             name: "Product $i",
             price: 9.99,
@@ -119,7 +119,7 @@ test('large cart calculation performance', function () {
     $cartWrapper = Cart::create(taxZone: 'RO');
     $cartId = $cartWrapper->getId();
     for ($i = 0; $i < 100; $i++) {
-        $cartWrapper->addItem(new CartItemDTO( // DTO namespace already updated via use statement
+        $cartWrapper->addItem(new CartItemDTO(
             id: (string) $i,
             name: "Product $i",
             price: 99.99,
@@ -144,7 +144,7 @@ test('cart find and access performance', function () {
     $cartWrapper = Cart::create(taxZone: 'RO');
     $cartId = $cartWrapper->getId();
     for ($i = 0; $i < 50; $i++) {
-        $cartWrapper->addItem(new CartItemDTO( // DTO namespace already updated via use statement
+        $cartWrapper->addItem(new CartItemDTO(
             id: (string) $i,
             name: "Product $i",
             price: 99.99,

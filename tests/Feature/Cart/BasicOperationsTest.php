@@ -3,9 +3,9 @@
 use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
-use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException; // Updated namespace
-use AndreiLungeanu\SimpleCart\CartInstance; // Add use statement
-use AndreiLungeanu\SimpleCart\FluentCart; // Add use statement
+use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Support\Facades\Event;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
@@ -72,7 +72,6 @@ test('can update item quantity', function () {
         ->and($loadedCart->getItems()->first()->id)->toBe('item-1')
         ->and($loadedCart->getItems()->first()->quantity)->toBe(3);
 
-    // Add + Update = 2 events
     Event::assertDispatchedTimes(CartUpdated::class, 2);
 });
 
@@ -142,7 +141,6 @@ test('can remove an item from the cart', function () {
         ->and($loadedCart->getItems()->first()->id)->toBe('item-2')
         ->and(Cart::itemCount($cartId))->toBe(2);
 
-    // Add(1), Add(1), Remove(1) = 3 events
     Event::assertDispatchedTimes(CartUpdated::class, 3);
 });
 
@@ -200,7 +198,6 @@ test('can remove a discount code', function () {
     $loadedCartAfterRemoveAll = $cartWrapper->getInstance();
     expect($loadedCartAfterRemoveAll->getDiscounts())->toBeEmpty();
 
-    // Events: apply(1), apply(1), remove(1), remove(1) = 4 events
     Event::assertDispatchedTimes(CartUpdated::class, 4);
 });
 
@@ -216,7 +213,6 @@ test('can set vat exempt status', function () {
     $loadedCart2 = $cartWrapper->getInstance();
     expect($loadedCart2->isVatExempt())->toBeFalse();
 
-    // Set(true), Set(false) = 2 events
     Event::assertDispatchedTimes(CartUpdated::class, 2);
 });
 
@@ -259,6 +255,5 @@ test('can chain methods fluently via wrapper', function () {
         ->and($loadedCart->isVatExempt())->toBeFalse();
 
     Event::assertDispatched(CartCreated::class);
-    // Add(1), Add(1), UpdateQty(1), ApplyDiscount(1), AddNote(1), SetShipping(1), SetVatExempt(1) = 7 events
     Event::assertDispatchedTimes(CartUpdated::class, 7);
 });

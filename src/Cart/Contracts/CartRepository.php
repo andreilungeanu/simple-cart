@@ -21,7 +21,7 @@ interface CartRepository
      * @param CartInstance $cartInstance The cart instance to save.
      * @return string The ID of the saved cart (might be the same or newly generated if applicable).
      */
-    public function save(CartInstance $cartInstance): string; // Changed from array input
+    public function save(CartInstance $cartInstance): string;
 
     /**
      * Delete a cart by its ID.
