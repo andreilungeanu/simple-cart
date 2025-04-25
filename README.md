@@ -9,9 +9,10 @@ A flexible shopping cart implementation for Laravel with support for multiple di
 
 ## Features
 
-- Stateless manager accessed via `SimpleCart` Facade for safe interaction.
-- **Fluent interface** for easy cart modification after creating or finding a cart.
-- Manages cart state via `CartInstance` objects (used internally).
+- Core logic managed by `CartManager` (bound to `CartManagerInterface`).
+- Stateless API accessed via `SimpleCart` Facade (delegates to `CartManager`).
+- **Fluent interface** (`FluentCart`) for easy cart modification after creating or finding a cart.
+- Manages cart state via `CartInstance` objects (primarily data containers).
 - Flexible tax calculation supporting multiple zones, categories, and VAT exemption.
 - Configurable shipping methods and costs, including free shipping thresholds.
 - Support for various discount types (e.g., fixed amount, percentage).
@@ -48,7 +49,7 @@ Use the `SimpleCart` facade to `create` or `find` a cart. These methods return a
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
 
 // Create a new cart instance (returns an object for chaining)
 $cart = SimpleCart::create(userId: 'user-123', taxZone: 'RO');
@@ -96,7 +97,7 @@ SimpleCart::destroy($cartId);
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
 
 // Create cart with a specific tax zone
 $cart = SimpleCart::create(taxZone: 'RO');
@@ -164,7 +165,7 @@ $cart->setShippingMethod('', []);
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO; // Updated namespace
 
 // Create cart and add items first...
 $cart = SimpleCart::create();
@@ -202,10 +203,10 @@ echo "Total after removing WELCOME10: " . $totalAfterRemove;
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO; // Updated namespace
 
 // Create cart and add items first...
-$cart = Cart::create(taxZone: 'RO');
+$cart = SimpleCart::create(taxZone: 'RO');
 // $cart->addItem(...);
 
 // Add extra costs
@@ -248,9 +249,9 @@ echo "Total after removing Handling Fee: " . $totalAfterRemove;
 ```php
 <?php
 
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
-use AndreiLungeanu\SimpleCart\Repositories\DatabaseCartRepository; // Default repository
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider; // Correct - outside Cart domain
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider; // Correct - outside Cart domain
+use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository; // Updated namespace
 
 return [
     // Persistence settings
@@ -323,9 +324,9 @@ return [
 
 The package fires the following events, allowing you to hook into the cart lifecycle:
 
-- `AndreiLungeanu\SimpleCart\Events\CartCreated`: Fired when a new cart is created. Contains the `CartInstance`.
-- `AndreiLungeanu\SimpleCart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. Contains the updated `CartInstance`.
-- `AndreiLungeanu\SimpleCart\Events\CartCleared`: Fired when the cart is cleared. Contains the `cartId`.
+- `AndreiLungeanu\SimpleCart\Cart\Events\CartCreated`: Fired when a new cart is created. Contains the `CartInstance`.
+- `AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. Contains the updated `CartInstance`.
+- `AndreiLungeanu\SimpleCart\Cart\Events\CartCleared`: Fired when the cart is cleared. Contains the `cartId`.
 
 You can create listeners for these events as per standard Laravel event handling.
 

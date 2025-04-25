@@ -2,9 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Performance;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart as Cart;
-use AndreiLungeanu\SimpleCart\SimpleCart;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
 use Illuminate\Support\Benchmark;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +51,7 @@ class CartBenchmarkTest extends TestCase
     private function benchmarkCalculateTotal(int $itemCount): void
     {
         $cartId = $this->createCartWithItemsFacade($itemCount);
-        Cart::applyDiscount($cartId, new \AndreiLungeanu\SimpleCart\DTOs\DiscountDTO(code: 'TEST10', type: 'fixed', value: 1.0));
+        Cart::applyDiscount($cartId, new \AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO(code: 'TEST10', type: 'fixed', value: 1.0));
         Cart::total($cartId);
     }
 
@@ -66,7 +65,8 @@ class CartBenchmarkTest extends TestCase
     {
         $cartId = $this->createCartWithItemsFacade($itemCount);
         $cart = Cart::find($cartId);
-        $items = $cart->getItems();
+        $instance = $cart->getInstance();
+        $items = $instance ? $instance->getItems() : collect([]);
         $id = $cart->getId();
     }
 

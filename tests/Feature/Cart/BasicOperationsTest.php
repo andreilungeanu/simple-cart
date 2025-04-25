@@ -1,28 +1,30 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Facades\SimpleCart as Cart;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
-use AndreiLungeanu\SimpleCart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Support\Facades\Event;
-use AndreiLungeanu\SimpleCart\Events\CartCreated;
-use AndreiLungeanu\SimpleCart\Events\CartUpdated;
-use AndreiLungeanu\SimpleCart\Events\CartCleared;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
 
 test('can create a new cart instance via facade', function () {
     Event::fake();
 
     $cartWrapper = Cart::create();
 
-    expect($cartWrapper)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\FluentCart::class)
+    expect($cartWrapper)->toBeInstanceOf(FluentCart::class)
         ->and($cartWrapper->getId())->toBeString();
 
     $cartInstance = $cartWrapper->getInstance();
-    expect($cartInstance)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\CartInstance::class)
+    expect($cartInstance)->toBeInstanceOf(CartInstance::class)
         ->and($cartInstance->getItems())->toBeEmpty();
 
     Event::assertDispatched(CartCreated::class, function ($event) use ($cartWrapper) {
-        return $event->cart instanceof \AndreiLungeanu\SimpleCart\CartInstance
+        return $event->cart instanceof CartInstance
             && $event->cart->getId() === $cartWrapper->getId();
     });
 });
@@ -192,12 +194,10 @@ test('can remove a discount code', function () {
     expect($loadedCartAfterRemove->getDiscounts())->toHaveCount(1)
         ->and($loadedCartAfterRemove->getDiscounts()->first()->code)->toBe('TESTCODE2');
 
-    // Remove the other one
     $cartWrapper->removeDiscount('TESTCODE2');
     $loadedCartAfterRemoveAll = $cartWrapper->getInstance();
     expect($loadedCartAfterRemoveAll->getDiscounts())->toBeEmpty();
 
-    // Events: apply(1), apply(1), remove(1), remove(1)
     Event::assertDispatchedTimes(CartUpdated::class, 4);
 });
 

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Cart;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use InvalidArgumentException;
 
 test('validates item quantity is positive', function () {
