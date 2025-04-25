@@ -1,18 +1,22 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Services;
+namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Contracts\TaxRateProvider;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface; // Add interface
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface; // Use interface for dependency
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface; // Use interface for dependency
+use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface; // Use interface for dependency
 
-class CartCalculator
+class CartCalculator implements CartCalculatorInterface // Implement interface
 {
     public function __construct(
-        protected ShippingCalculator $shippingCalculator,
-        protected TaxCalculator $taxCalculator,
-        protected DiscountCalculator $discountCalculator,
+        protected ShippingCalculatorInterface $shippingCalculator, // Type hint interface
+        protected TaxCalculatorInterface $taxCalculator, // Type hint interface
+        protected DiscountCalculatorInterface $discountCalculator, // Type hint interface
         protected TaxRateProvider $taxRateProvider
     ) {}
 

@@ -2,18 +2,13 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
 use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\SimpleCart;
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
-use AndreiLungeanu\SimpleCart\Services\CartCalculator;
-use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
 use Mockery;
 
 afterEach(function () {
     Mockery::close();
 });
-
 
 test('shipping rate includes VAT information', function () {
     $provider = new DefaultShippingProvider;

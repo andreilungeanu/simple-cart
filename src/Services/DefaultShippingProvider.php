@@ -3,7 +3,7 @@
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
 
 class DefaultShippingProvider implements ShippingRateProvider
 {
@@ -21,7 +21,7 @@ class DefaultShippingProvider implements ShippingRateProvider
         return [
             'amount' => $cost,
             'vat_rate' => $vatRate,
-            'vat_included' => false,
+            'vat_included' => false, // Default assumes VAT is not included in the base cost
         ];
     }
 
@@ -30,6 +30,7 @@ class DefaultShippingProvider implements ShippingRateProvider
         return collect(config('simple-cart.shipping.settings.methods', []))
             ->map(fn($methodConfig, $key) => [
                 'name' => $methodConfig['name'] ?? 'Unknown Method',
+                // These are informational and might not reflect actual calculation logic
                 'vat_rate' => null,
                 'vat_included' => false,
             ])

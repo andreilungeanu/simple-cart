@@ -1,6 +1,6 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Events;
+namespace AndreiLungeanu\SimpleCart\Cart\Events;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
 use Illuminate\Foundation\Events\Dispatchable;

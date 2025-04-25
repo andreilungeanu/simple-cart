@@ -2,13 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\ShippingCalculator;
-use AndreiLungeanu\SimpleCart\SimpleCart;
-use AndreiLungeanu\SimpleCart\Repositories\CartRepository;
-use AndreiLungeanu\SimpleCart\Services\CartCalculator;
-use AndreiLungeanu\SimpleCart\Actions\AddItemToCartAction;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider; // Keep this
+use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator; // Updated namespace
 use Mockery;
 
 afterEach(function () {
@@ -25,7 +21,6 @@ beforeEach(function () {
         'simple-cart.tax.settings.zones.RO.default_rate' => 0.19,
     ]);
 });
-
 
 test('calculates basic shipping cost', function () {
     $cartItems = [

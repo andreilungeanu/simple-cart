@@ -1,24 +1,12 @@
 <?php
 
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use AndreiLungeanu\SimpleCart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\CartInstance; // Keep this
 
 uses(TestCase::class)->in(__DIR__);
 
-/*
-|--------------------------------------------------------------------------
-| Global Test Helper Functions
-|--------------------------------------------------------------------------
-|
-| Define helper functions here that can be used across your test suite.
-|
-*/
-
-/**
- * Helper function to create a CartInstance with specific state
- * for testing providers/calculators in Unit tests.
- */
+// Helper function to create a CartInstance with specific state for unit tests.
 function createCartInstanceForTesting(
     array $items = [],
     ?string $taxZone = null,

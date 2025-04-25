@@ -1,6 +1,6 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Models;
+namespace AndreiLungeanu\SimpleCart\Cart\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

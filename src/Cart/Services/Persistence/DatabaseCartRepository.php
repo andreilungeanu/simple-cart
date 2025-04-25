@@ -1,9 +1,9 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Repositories;
+namespace AndreiLungeanu\SimpleCart\Cart\Services\Persistence;
 
-use AndreiLungeanu\SimpleCart\Contracts\CartRepository;
-use AndreiLungeanu\SimpleCart\Models\Cart as CartModel;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Models\Cart as CartModel;
 use AndreiLungeanu\SimpleCart\CartInstance;
 use Illuminate\Support\Str;
 
@@ -23,24 +23,7 @@ class DatabaseCartRepository implements CartRepository
             return null;
         }
 
-        $cartInstance = new CartInstance(
-            id: $cartModel->id,
-            userId: $cartModel->user_id,
-            taxZone: $cartModel->tax_zone,
-            items: $cartModel->items ?? [],
-            discounts: $cartModel->discounts ?? [],
-            notes: $cartModel->notes ?? [],
-            extraCosts: $cartModel->extra_costs ?? [],
-            shippingMethod: $cartModel->shipping_method,
-            vatExempt: $cartModel->vat_exempt ?? false,
-        );
-
-        $cartInstance->setShippingVatInfoInternal(
-            $cartModel->shipping_vat_rate,
-            $cartModel->shipping_vat_included ?? false
-        );
-
-        return $cartInstance;
+        return $this->hydrateFromModel($cartModel);
     }
 
     /**
@@ -94,18 +77,34 @@ class DatabaseCartRepository implements CartRepository
     {
         return CartModel::where('user_id', $userId)
             ->get()
-            ->map(function (CartModel $cartModel) {
-                return new CartInstance(
-                    id: $cartModel->id,
-                    userId: $cartModel->user_id,
-                    taxZone: $cartModel->tax_zone,
-                    items: $cartModel->items ?? [],
-                    discounts: $cartModel->discounts ?? [],
-                    notes: $cartModel->notes ?? [],
-                    extraCosts: $cartModel->extra_costs ?? [],
-                    shippingMethod: $cartModel->shipping_method,
-                    vatExempt: $cartModel->vat_exempt ?? false
-                );
-            });
+            ->map(fn(CartModel $cartModel) => $this->hydrateFromModel($cartModel));
+    }
+
+    /**
+     * Hydrate a CartInstance from an Eloquent CartModel.
+     *
+     * @param CartModel $cartModel
+     * @return CartInstance
+     */
+    private function hydrateFromModel(CartModel $cartModel): CartInstance
+    {
+        $cartInstance = new CartInstance(
+            id: $cartModel->id,
+            userId: $cartModel->user_id,
+            taxZone: $cartModel->tax_zone,
+            items: $cartModel->items ?? [],
+            discounts: $cartModel->discounts ?? [],
+            notes: $cartModel->notes ?? [],
+            extraCosts: $cartModel->extra_costs ?? [],
+            shippingMethod: $cartModel->shipping_method,
+            vatExempt: $cartModel->vat_exempt ?? false,
+        );
+
+        $cartInstance->setShippingVatInfoInternal(
+            $cartModel->shipping_vat_rate,
+            $cartModel->shipping_vat_included ?? false
+        );
+
+        return $cartInstance;
     }
 }

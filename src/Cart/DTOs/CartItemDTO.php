@@ -1,6 +1,6 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\DTOs;
+namespace AndreiLungeanu\SimpleCart\Cart\DTOs;
 
 readonly class CartItemDTO
 {

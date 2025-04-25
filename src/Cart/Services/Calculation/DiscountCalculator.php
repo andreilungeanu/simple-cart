@@ -1,11 +1,12 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Services;
+namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface; // Add interface
 
-class DiscountCalculator
+class DiscountCalculator implements DiscountCalculatorInterface // Implement interface
 {
     /**
      * Calculate the total discount amount for the cart.
