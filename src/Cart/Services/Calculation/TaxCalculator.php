@@ -2,9 +2,9 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 class TaxCalculator implements TaxCalculatorInterface
 {

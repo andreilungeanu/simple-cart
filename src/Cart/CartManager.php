@@ -2,12 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\FluentCart;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
@@ -15,6 +13,8 @@ use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 
@@ -41,6 +41,7 @@ class CartManager implements CartManagerInterface
     public function find(string $cartId): ?FluentCart
     {
         $cartInstance = $this->getInstance($cartId);
+
         return $cartInstance ? new FluentCart($cartId) : null;
     }
 
@@ -53,6 +54,7 @@ class CartManager implements CartManagerInterface
         if (! $wrapper) {
             throw new CartException("Cart with ID [{$cartId}] not found.");
         }
+
         return $wrapper;
     }
 
@@ -109,7 +111,7 @@ class CartManager implements CartManagerInterface
         $initialItems = $cartInstance->getItems();
         $initialCount = $initialItems->count();
 
-        $updatedItems = $initialItems->filter(fn(CartItemDTO $item) => $item->id !== $itemId);
+        $updatedItems = $initialItems->filter(fn (CartItemDTO $item) => $item->id !== $itemId);
 
         if ($updatedItems->count() < $initialCount) {
             $cartInstance->setItems($updatedItems);
@@ -138,8 +140,10 @@ class CartManager implements CartManagerInterface
         $updatedItems = $cartInstance->getItems()->map(function (CartItemDTO $item) use ($itemId, $quantity, &$updated) {
             if ($item->id === $itemId) {
                 $updated = true;
+
                 return $item->withQuantity($quantity);
             }
+
             return $item;
         });
 
@@ -189,7 +193,7 @@ class CartManager implements CartManagerInterface
         $initialDiscounts = $cartInstance->getDiscounts();
         $initialCount = $initialDiscounts->count();
 
-        $updatedDiscounts = $initialDiscounts->filter(fn(DiscountDTO $discount) => $discount->code !== $code);
+        $updatedDiscounts = $initialDiscounts->filter(fn (DiscountDTO $discount) => $discount->code !== $code);
 
         if ($updatedDiscounts->count() < $initialCount) {
             $cartInstance->setDiscounts($updatedDiscounts);
@@ -235,7 +239,7 @@ class CartManager implements CartManagerInterface
         $initialCosts = $cartInstance->getExtraCosts();
         $initialCount = $initialCosts->count();
 
-        $updatedCosts = $initialCosts->filter(fn(ExtraCostDTO $cost) => $cost->name !== $name);
+        $updatedCosts = $initialCosts->filter(fn (ExtraCostDTO $cost) => $cost->name !== $name);
 
         if ($updatedCosts->count() < $initialCount) {
             $cartInstance->setExtraCosts($updatedCosts);
@@ -343,6 +347,7 @@ class CartManager implements CartManagerInterface
     {
         // TODO: Consider dispatching an event before deletion?
         $deleted = $this->repository->delete($cartId);
+
         // TODO: Dispatch event after successful deletion?
         return $deleted;
     }
@@ -353,6 +358,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for total calculation.");
         }
+
         return $this->calculator->getTotal($cartInstance);
     }
 
@@ -362,6 +368,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for subtotal calculation.");
         }
+
         return $this->calculator->getSubtotal($cartInstance);
     }
 
@@ -371,6 +378,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for taxAmount calculation.");
         }
+
         return $this->calculator->getTaxAmount($cartInstance);
     }
 
@@ -380,6 +388,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for shippingAmount calculation.");
         }
+
         return $this->calculator->getShippingAmount($cartInstance);
     }
 
@@ -389,6 +398,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for discountAmount calculation.");
         }
+
         return $this->calculator->getDiscountAmount($cartInstance);
     }
 
@@ -398,6 +408,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for extraCostsTotal calculation.");
         }
+
         return $this->calculator->getExtraCostsTotal($cartInstance);
     }
 
@@ -407,6 +418,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for itemCount calculation.");
         }
+
         return $this->calculator->getItemCount($cartInstance);
     }
 
@@ -416,6 +428,7 @@ class CartManager implements CartManagerInterface
         if (! $cartInstance) {
             throw new CartException("Cart with ID [{$cartId}] not found for isFreeShippingApplied check.");
         }
+
         return $this->calculator->isFreeShippingApplied($cartInstance);
     }
 }

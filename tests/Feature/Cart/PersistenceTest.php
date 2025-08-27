@@ -2,16 +2,14 @@
 
 namespace Tests\Feature\Cart;
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\CartInstance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
-
 
 test('can create, modify, save, and retrieve a cart via fluent wrapper', function () {
     $cartWrapper = Cart::create(userId: 'user-123', taxZone: 'RO');
@@ -64,7 +62,7 @@ test('fluent wrapper methods update an existing cart', function () {
 test('findOrFail throws exception for non-existent cart', function () {
     $nonExistentId = \Illuminate\Support\Str::uuid()->toString();
 
-    expect(fn() => Cart::findOrFail($nonExistentId))
+    expect(fn () => Cart::findOrFail($nonExistentId))
         ->toThrow(CartException::class, "Cart with ID [{$nonExistentId}] not found.");
 });
 

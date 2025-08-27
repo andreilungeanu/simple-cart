@@ -1,8 +1,8 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 
 test('calculates subtotal correctly', function () {
     $cartWrapper = Cart::create();
@@ -24,12 +24,11 @@ test('calculates total correctly with items only', function () {
         ->and(Cart::total($cartId))->toBe(119.00);
 });
 
-
 test('maintains precision in subtotal calculations', function () {
     $cartWrapper = Cart::create();
 
     for ($i = 0; $i < 10; $i++) {
-        $cartWrapper->addItem(new CartItemDTO(id: (string) $i, name: 'Test Product ' . (string) $i, quantity: 1, price: 9.99));
+        $cartWrapper->addItem(new CartItemDTO(id: (string) $i, name: 'Test Product '.(string) $i, quantity: 1, price: 9.99));
     }
 
     expect(Cart::subtotal($cartWrapper->getId()))->toBe(99.90);
@@ -40,11 +39,10 @@ test('maintains precision in tax calculations', function () {
     $cartWrapper = Cart::create(taxZone: 'RO');
 
     for ($i = 0; $i < 10; $i++) {
-        $cartWrapper->addItem(new CartItemDTO(id: (string) $i, name: 'Test Product ' . (string) $i, quantity: 1, price: 9.99));
+        $cartWrapper->addItem(new CartItemDTO(id: (string) $i, name: 'Test Product '.(string) $i, quantity: 1, price: 9.99));
     }
     expect(Cart::taxAmount($cartWrapper->getId()))->toBe(18.98);
 });
-
 
 test('handles rounding correctly for tax calculations', function () {
     config(['simple-cart.tax.settings.zones.RO.default_rate' => 0.19]);
@@ -53,7 +51,6 @@ test('handles rounding correctly for tax calculations', function () {
 
     expect(Cart::taxAmount($cartWrapper->getId()))->toBe(19.00);
 });
-
 
 test('calculates total with fixed extra costs', function () {
     config(['simple-cart.tax.settings.zones.RO.default_rate' => 0.19]);
@@ -67,7 +64,6 @@ test('calculates total with fixed extra costs', function () {
         ->and(Cart::taxAmount($cartId))->toBe(19.00 + 0.95)
         ->and(Cart::total($cartId))->toBe(124.95);
 });
-
 
 test('calculates total with percentage-based extra costs', function () {
     config(['simple-cart.tax.settings.zones.RO.default_rate' => 0.19]);

@@ -6,7 +6,7 @@ use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use InvalidArgumentException;
 
 test('validates item quantity is positive', function () {
-    expect(fn() => new CartItemDTO(
+    expect(fn () => new CartItemDTO(
         id: '1',
         name: 'Test',
         price: 10.00,
@@ -16,7 +16,7 @@ test('validates item quantity is positive', function () {
 });
 
 test('validates price is not greater than maximum allowed', function () {
-    expect(fn() => new CartItemDTO(
+    expect(fn () => new CartItemDTO(
         id: '1',
         name: 'Test',
         price: PHP_FLOAT_MAX,

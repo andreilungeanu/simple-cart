@@ -13,7 +13,7 @@ class CartUpdated
     /**
      * Create a new event instance.
      *
-     * @param CartInstance $cart The cart instance that was updated.
+     * @param  CartInstance  $cart  The cart instance that was updated.
      */
     public function __construct(
         public readonly CartInstance $cart

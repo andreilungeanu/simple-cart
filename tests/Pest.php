@@ -1,8 +1,7 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);
 

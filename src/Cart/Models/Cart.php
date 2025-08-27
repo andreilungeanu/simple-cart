@@ -4,9 +4,6 @@ namespace AndreiLungeanu\SimpleCart\Cart\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 /**
  * @property string $id
  * @property ?string $user_id
@@ -30,6 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Cart extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $guarded = [];

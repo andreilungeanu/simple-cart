@@ -3,8 +3,8 @@
 namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use Mockery;
 
 afterEach(function () {

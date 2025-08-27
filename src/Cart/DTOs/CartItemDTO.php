@@ -36,13 +36,13 @@ readonly class CartItemDTO
     /**
      * Create a new DTO instance from an array.
      *
-     * @param array $data Associative array with item data.
-     * @return self
+     * @param  array  $data  Associative array with item data.
+     *
      * @throws \InvalidArgumentException If required keys are missing or data is invalid.
      */
     public static function fromArray(array $data): self
     {
-        if (!isset($data['id'], $data['name'], $data['price'], $data['quantity'])) {
+        if (! isset($data['id'], $data['name'], $data['price'], $data['quantity'])) {
             throw new \InvalidArgumentException('Item array must contain id, name, price, and quantity.');
         }
 
@@ -58,8 +58,6 @@ readonly class CartItemDTO
 
     /**
      * Convert the DTO instance to an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {

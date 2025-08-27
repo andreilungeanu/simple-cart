@@ -1,15 +1,15 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Support\Facades\Event;
-use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
-use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
-use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
 
 test('can create a new cart instance via facade', function () {
     Event::fake();
@@ -58,7 +58,6 @@ test('can add multiple items', function () {
         ->and($items['item-2']->quantity)->toBe(2);
 });
 
-
 test('can update item quantity', function () {
     Event::fake();
 
@@ -79,7 +78,7 @@ test('throws exception when updating quantity for non-existent item', function (
     $cartWrapper = Cart::create();
     $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', price: 99.99, quantity: 1));
 
-    expect(fn() => $cartWrapper->updateQuantity('non-existent-item', 2))
+    expect(fn () => $cartWrapper->updateQuantity('non-existent-item', 2))
         ->toThrow(CartException::class);
 });
 
@@ -87,13 +86,12 @@ test('throws exception when updating quantity to zero or less', function () {
     $cartWrapper = Cart::create();
     $cartWrapper->addItem(new CartItemDTO(id: 'item-1', name: 'Test Product item-1', price: 99.99, quantity: 1));
 
-    expect(fn() => $cartWrapper->updateQuantity('item-1', 0))
+    expect(fn () => $cartWrapper->updateQuantity('item-1', 0))
         ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 
-    expect(fn() => $cartWrapper->updateQuantity('item-1', -1))
+    expect(fn () => $cartWrapper->updateQuantity('item-1', -1))
         ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 });
-
 
 test('can get item count', function () {
     $cartWrapper = Cart::create();

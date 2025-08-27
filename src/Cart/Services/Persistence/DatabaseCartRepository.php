@@ -5,14 +5,13 @@ namespace AndreiLungeanu\SimpleCart\Cart\Services\Persistence;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
 use AndreiLungeanu\SimpleCart\Cart\Models\Cart as CartModel;
 use AndreiLungeanu\SimpleCart\CartInstance;
-use Illuminate\Support\Str;
 
 class DatabaseCartRepository implements CartRepository
 {
     /**
      * Find a cart by its ID and return it as a CartInstance object.
      *
-     * @param string $id The ID of the cart to find.
+     * @param  string  $id  The ID of the cart to find.
      * @return CartInstance|null The found CartInstance or null if not found.
      */
     public function find(string $id): ?CartInstance
@@ -30,7 +29,7 @@ class DatabaseCartRepository implements CartRepository
      * Save the state of a CartInstance.
      * Should handle both creation and updates.
      *
-     * @param CartInstance $cartInstance The cart instance to save.
+     * @param  CartInstance  $cartInstance  The cart instance to save.
      * @return string The ID of the saved cart.
      */
     public function save(CartInstance $cartInstance): string
@@ -39,10 +38,10 @@ class DatabaseCartRepository implements CartRepository
 
         $dataToSave = [
             'id' => $id,
-            'items' => $cartInstance->getItems()->map(fn($item) => $item->toArray())->toArray(),
-            'discounts' => $cartInstance->getDiscounts()->map(fn($discount) => $discount->toArray())->toArray(),
+            'items' => $cartInstance->getItems()->map(fn ($item) => $item->toArray())->toArray(),
+            'discounts' => $cartInstance->getDiscounts()->map(fn ($discount) => $discount->toArray())->toArray(),
             'notes' => $cartInstance->getNotes()->toArray(),
-            'extra_costs' => $cartInstance->getExtraCosts()->map(fn($cost) => $cost->toArray())->toArray(),
+            'extra_costs' => $cartInstance->getExtraCosts()->map(fn ($cost) => $cost->toArray())->toArray(),
             'user_id' => $cartInstance->getUserId(),
             'shipping_method' => $cartInstance->getShippingMethod(),
             'tax_zone' => $cartInstance->getTaxZone(),
@@ -59,7 +58,7 @@ class DatabaseCartRepository implements CartRepository
     /**
      * Delete a cart by its ID.
      *
-     * @param string $id The ID of the cart to delete.
+     * @param  string  $id  The ID of the cart to delete.
      * @return bool True on success, false on failure.
      */
     public function delete(string $id): bool
@@ -70,21 +69,17 @@ class DatabaseCartRepository implements CartRepository
     /**
      * Find carts associated with a user ID.
      *
-     * @param string $userId
      * @return \Illuminate\Support\Collection<int, CartInstance> Collection of CartInstance objects.
      */
     public function findByUser(string $userId): \Illuminate\Support\Collection
     {
         return CartModel::where('user_id', $userId)
             ->get()
-            ->map(fn(CartModel $cartModel) => $this->hydrateFromModel($cartModel));
+            ->map(fn (CartModel $cartModel) => $this->hydrateFromModel($cartModel));
     }
 
     /**
      * Hydrate a CartInstance from an Eloquent CartModel.
-     *
-     * @param CartModel $cartModel
-     * @return CartInstance
      */
     private function hydrateFromModel(CartModel $cartModel): CartInstance
     {

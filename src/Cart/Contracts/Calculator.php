@@ -12,7 +12,7 @@ interface Calculator
     /**
      * Perform a calculation based on the cart instance.
      *
-     * @param CartInstance $cart The cart instance to calculate for.
+     * @param  CartInstance  $cart  The cart instance to calculate for.
      * @return float The calculated value.
      */
     public function calculate(CartInstance $cart): float;

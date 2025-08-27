@@ -2,10 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 class ShippingCalculator implements ShippingCalculatorInterface
 {
@@ -21,7 +21,7 @@ class ShippingCalculator implements ShippingCalculatorInterface
         }
 
         $subtotal = $cart->getItems()->sum(
-            fn(CartItemDTO $item) => $item->price * $item->quantity
+            fn (CartItemDTO $item) => $item->price * $item->quantity
         );
 
         $threshold = config('simple-cart.shipping.settings.free_shipping_threshold', null);

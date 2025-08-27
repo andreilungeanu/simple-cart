@@ -2,10 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
@@ -44,6 +44,7 @@ class FluentCart
     public function addItem(CartItemDTO|array $item): static
     {
         $this->cartManager->addItem($this->cartId, $item);
+
         return $this;
     }
 
@@ -53,6 +54,7 @@ class FluentCart
     public function removeItem(string $itemId): static
     {
         $this->cartManager->removeItem($this->cartId, $itemId);
+
         return $this;
     }
 
@@ -62,6 +64,7 @@ class FluentCart
     public function updateQuantity(string $itemId, int $quantity): static
     {
         $this->cartManager->updateQuantity($this->cartId, $itemId, $quantity);
+
         return $this;
     }
 
@@ -71,6 +74,7 @@ class FluentCart
     public function clear(): static
     {
         $this->cartManager->clear($this->cartId);
+
         return $this;
     }
 
@@ -80,6 +84,7 @@ class FluentCart
     public function applyDiscount(DiscountDTO|array $discount): static
     {
         $this->cartManager->applyDiscount($this->cartId, $discount);
+
         return $this;
     }
 
@@ -89,6 +94,7 @@ class FluentCart
     public function removeDiscount(string $code): static
     {
         $this->cartManager->removeDiscount($this->cartId, $code);
+
         return $this;
     }
 
@@ -98,6 +104,7 @@ class FluentCart
     public function addNote(string $note): static
     {
         $this->cartManager->addNote($this->cartId, $note);
+
         return $this;
     }
 
@@ -107,6 +114,7 @@ class FluentCart
     public function removeExtraCost(string $name): static
     {
         $this->cartManager->removeExtraCost($this->cartId, $name);
+
         return $this;
     }
 
@@ -116,6 +124,7 @@ class FluentCart
     public function addExtraCost(ExtraCostDTO|array $cost): static
     {
         $this->cartManager->addExtraCost($this->cartId, $cost);
+
         return $this;
     }
 
@@ -125,6 +134,7 @@ class FluentCart
     public function setShippingMethod(string $method, array $shippingInfo): static
     {
         $this->cartManager->setShippingMethod($this->cartId, $method, $shippingInfo);
+
         return $this;
     }
 
@@ -134,6 +144,7 @@ class FluentCart
     public function setVatExempt(bool $exempt = true): static
     {
         $this->cartManager->setVatExempt($this->cartId, $exempt);
+
         return $this;
     }
 
