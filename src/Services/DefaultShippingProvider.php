@@ -2,8 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart\Services;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 class DefaultShippingProvider implements ShippingRateProvider
 {
@@ -28,7 +28,7 @@ class DefaultShippingProvider implements ShippingRateProvider
     public function getAvailableMethods(CartInstance $cart): array
     {
         return collect(config('simple-cart.shipping.settings.methods', []))
-            ->map(fn($methodConfig, $key) => [
+            ->map(fn ($methodConfig, $key) => [
                 'name' => $methodConfig['name'] ?? 'Unknown Method',
                 'vat_rate' => null,
                 'vat_included' => false,

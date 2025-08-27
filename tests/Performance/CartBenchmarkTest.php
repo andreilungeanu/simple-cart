@@ -5,8 +5,8 @@ namespace AndreiLungeanu\SimpleCart\Tests\Performance;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use Illuminate\Support\Benchmark;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Benchmark;
 
 class CartBenchmarkTest extends TestCase
 {
@@ -21,10 +21,10 @@ class CartBenchmarkTest extends TestCase
 
         $result = Benchmark::measure(
             [
-                'Adding 100 Items' => fn() => $this->benchmarkAddItems(100),
-                'Calculating Total with 50 Items + Discount' => fn() => $this->benchmarkCalculateTotal(50),
-                'Persistence Save/Find with 20 Items' => fn() => $this->benchmarkPersistence(20),
-                'Get Cart Data Array with 50 Items' => fn() => $this->benchmarkGetArray(50),
+                'Adding 100 Items' => fn () => $this->benchmarkAddItems(100),
+                'Calculating Total with 50 Items + Discount' => fn () => $this->benchmarkCalculateTotal(50),
+                'Persistence Save/Find with 20 Items' => fn () => $this->benchmarkPersistence(20),
+                'Get Cart Data Array with 50 Items' => fn () => $this->benchmarkGetArray(50),
             ],
             $iterations
         );
@@ -82,6 +82,7 @@ class CartBenchmarkTest extends TestCase
                 quantity: 1
             ));
         }
+
         return $cartId;
     }
 }
@@ -135,7 +136,6 @@ test('large cart calculation performance', function () {
 
     expect($executionTime)->toBeNumeric();
 })->group('benchmark');
-
 
 /**
  * @group benchmark

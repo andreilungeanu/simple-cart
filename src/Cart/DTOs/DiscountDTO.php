@@ -12,7 +12,7 @@ readonly class DiscountDTO
         public ?string $minimumAmount = null,
         public ?string $expiresAt = null,
     ) {
-        if (!in_array($this->type, ['fixed', 'percentage', 'shipping'])) {
+        if (! in_array($this->type, ['fixed', 'percentage', 'shipping'])) {
             throw new \InvalidArgumentException('Invalid discount type.');
         }
         if ($this->value < 0) {
@@ -23,13 +23,13 @@ readonly class DiscountDTO
     /**
      * Create a new DTO instance from an array.
      *
-     * @param array $data Associative array with discount data.
-     * @return self
+     * @param  array  $data  Associative array with discount data.
+     *
      * @throws \InvalidArgumentException If required keys are missing or data is invalid.
      */
     public static function fromArray(array $data): self
     {
-        if (!isset($data['code'], $data['type'], $data['value'])) {
+        if (! isset($data['code'], $data['type'], $data['value'])) {
             throw new \InvalidArgumentException('Discount array must contain code, type, and value.');
         }
 
@@ -45,8 +45,6 @@ readonly class DiscountDTO
 
     /**
      * Convert the DTO instance to an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {

@@ -1,7 +1,7 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 
 beforeEach(function () {
     config([
@@ -57,7 +57,6 @@ test('applies different VAT rates by category correctly', function () {
 
     expect(Cart::taxAmount($cartId))->toBe(33.00);
 });
-
 
 test('handles VAT exemption correctly', function () {
     $cart = Cart::create(taxZone: 'RO');

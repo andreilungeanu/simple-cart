@@ -32,7 +32,7 @@ test('returns correct structure for available shipping methods', function () {
         'simple-cart.shipping.settings.methods' => [
             'standard' => ['name' => 'Standard', 'cost' => 5.99, 'vat_rate' => 0.19],
             'express' => ['name' => 'Express', 'cost' => 15.99, 'vat_rate' => 0.19],
-        ]
+        ],
     ]);
 
     $methods = $provider->getAvailableMethods($cart);

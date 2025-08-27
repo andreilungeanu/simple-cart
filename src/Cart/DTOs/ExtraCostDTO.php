@@ -21,17 +21,17 @@ readonly class ExtraCostDTO
     /**
      * Create a new DTO instance from an array.
      *
-     * @param array $data Associative array with extra cost data.
-     * @return self
+     * @param  array  $data  Associative array with extra cost data.
+     *
      * @throws \InvalidArgumentException If required keys are missing or data is invalid.
      */
     public static function fromArray(array $data): self
     {
-        if (!isset($data['name'], $data['amount'], $data['type'])) {
+        if (! isset($data['name'], $data['amount'], $data['type'])) {
             throw new \InvalidArgumentException('Extra cost array must contain name, amount, and type.');
         }
 
-        if (!in_array($data['type'], ['fixed', 'percentage'])) {
+        if (! in_array($data['type'], ['fixed', 'percentage'])) {
             throw new \InvalidArgumentException('Invalid extra cost type.');
         }
         if ($data['amount'] < 0 && $data['type'] === 'fixed') {
@@ -50,8 +50,6 @@ readonly class ExtraCostDTO
 
     /**
      * Convert the DTO instance to an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {

@@ -2,8 +2,8 @@
 
 namespace AndreiLungeanu\SimpleCart\Services;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\CartInstance;
 
 class DefaultTaxProvider implements TaxRateProvider
 {
@@ -35,7 +35,7 @@ class DefaultTaxProvider implements TaxRateProvider
             return null;
         }
         $zoneConfig = config("simple-cart.tax.settings.zones.{$zone}");
-        if (!is_array($zoneConfig)) {
+        if (! is_array($zoneConfig)) {
             return null;
         }
 

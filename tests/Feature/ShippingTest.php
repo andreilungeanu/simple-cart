@@ -1,7 +1,7 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 
 beforeEach(function () {
     config([
@@ -61,7 +61,6 @@ test('applies free shipping above threshold', function () {
     expect(Cart::shippingAmount($cartWrapper->getId()))->toBe(0.00);
 });
 
-
 test('respects custom shipping threshold', function () {
     config(['simple-cart.shipping.settings.free_shipping_threshold' => 200.00]);
 
@@ -90,7 +89,6 @@ test('calculates total with shipping cost and tax', function () {
         ->and(Cart::taxAmount($cartId))->toBe(18.24)
         ->and(Cart::total($cartId))->toBe(114.23);
 });
-
 
 test('handles shipping with included VAT correctly in total', function () {
     $cartWrapper = Cart::create(taxZone: 'RO');

@@ -2,11 +2,11 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Contracts;
 
-use AndreiLungeanu\SimpleCart\CartInstance;
-use AndreiLungeanu\SimpleCart\FluentCart;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
+use AndreiLungeanu\SimpleCart\CartInstance;
+use AndreiLungeanu\SimpleCart\FluentCart;
 
 /**
  * Interface for managing cart instances.
@@ -91,12 +91,19 @@ interface CartManagerInterface
     public function destroy(string $cartId): bool;
 
     public function total(string $cartId): float;
+
     public function subtotal(string $cartId): float;
+
     public function taxAmount(string $cartId): float;
+
     public function shippingAmount(string $cartId): float;
+
     public function discountAmount(string $cartId): float;
+
     public function extraCostsTotal(string $cartId): float;
+
     public function itemCount(string $cartId): int;
+
     public function isFreeShippingApplied(string $cartId): bool;
 
     /**

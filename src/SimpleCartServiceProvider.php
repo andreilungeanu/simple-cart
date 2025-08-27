@@ -2,26 +2,25 @@
 
 namespace AndreiLungeanu\SimpleCart;
 
+use AndreiLungeanu\SimpleCart\Cart\Actions\AddItemToCartAction;
+use AndreiLungeanu\SimpleCart\Cart\CartManager;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
 use AndreiLungeanu\SimpleCart\Cart\Listeners\CartEventSubscriber;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
-use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\CartCalculator;
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
-use AndreiLungeanu\SimpleCart\Cart\CartManager;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
-use AndreiLungeanu\SimpleCart\Cart\Actions\AddItemToCartAction;
-use Illuminate\Contracts\Events\Dispatcher;
+use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
+use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

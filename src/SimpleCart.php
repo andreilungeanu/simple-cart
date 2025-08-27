@@ -6,7 +6,6 @@ use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
-use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 
 /**
  * Class SimpleCart (Facade Target / Entry Point)

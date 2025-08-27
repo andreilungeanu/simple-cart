@@ -14,15 +14,25 @@ use Illuminate\Support\Str;
 class CartInstance
 {
     public string $id = '';
+
     public ?string $userId = null;
+
     public ?string $taxZone = null;
+
     protected Collection $items;
+
     protected Collection $discounts;
+
     protected Collection $notes;
+
     protected Collection $extraCosts;
+
     private ?float $shippingVatRate = null;
+
     private bool $shippingVatIncluded = false;
+
     private bool $vatExempt = false;
+
     protected ?string $currentShippingMethod = null;
 
     public function __construct(
@@ -39,10 +49,16 @@ class CartInstance
         $this->id = $id ?: (string) Str::uuid();
         $this->userId = $userId;
         $this->taxZone = $taxZone;
-        $this->items = collect($items)->map(fn($item) => $item instanceof CartItemDTO ? $item : new CartItemDTO(...$item));
-        $this->discounts = collect($discounts)->map(fn($discount) => $discount instanceof DiscountDTO ? $discount : new DiscountDTO(...$discount));
-        $this->notes = collect($notes);
-        $this->extraCosts = collect($extraCosts)->map(fn($cost) => $cost instanceof ExtraCostDTO ? $cost : new ExtraCostDTO(...$cost));
+        $this->items = Collection::make($items)
+            ->map(fn ($item) => $item instanceof CartItemDTO ? $item : CartItemDTO::fromArray((array) $item));
+
+        $this->discounts = Collection::make($discounts)
+            ->map(fn ($discount) => $discount instanceof DiscountDTO ? $discount : DiscountDTO::fromArray((array) $discount));
+
+        $this->notes = Collection::make($notes);
+
+        $this->extraCosts = Collection::make($extraCosts)
+            ->map(fn ($cost) => $cost instanceof ExtraCostDTO ? $cost : ExtraCostDTO::fromArray((array) $cost));
         $this->currentShippingMethod = $shippingMethod;
         $this->vatExempt = $vatExempt;
     }
@@ -102,7 +118,7 @@ class CartInstance
 
     public function findItem(string $itemId): ?CartItemDTO
     {
-        return $this->items->first(fn(CartItemDTO $item) => $item->id === $itemId);
+        return $this->items->first(fn (CartItemDTO $item) => $item->id === $itemId);
     }
 
     /** @internal */

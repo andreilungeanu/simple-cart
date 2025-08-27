@@ -2,11 +2,12 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Facades;
 
-use Illuminate\Support\Facades\Facade;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
+use Illuminate\Support\Facades\Facade;
 
 /**
  * @see \AndreiLungeanu\SimpleCart\SimpleCart
+ *
  * @method static \AndreiLungeanu\SimpleCart\FluentCart find(string $cartId)
  * @method static \AndreiLungeanu\SimpleCart\FluentCart findOrFail(string $cartId)
  * @method static \AndreiLungeanu\SimpleCart\FluentCart create(?string $cartId = null, ?string $userId = null, ?string $taxZone = null)
