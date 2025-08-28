@@ -12,7 +12,7 @@ class TaxCalculator implements TaxCalculatorInterface
         protected TaxRateProviderInterface $provider
     ) {}
 
-    public function calculate(CartInstance $cart): float
+    public function getTaxAmount(CartInstance $cart): float
     {
         if ($cart->isVatExempt()) {
             return 0.0;

@@ -31,7 +31,7 @@ test('calculates basic shipping cost', function () {
 
     $calculator = new ShippingCalculator(new DefaultShippingProvider);
 
-    $shippingCost = $calculator->calculate($cart);
+    $shippingCost = $calculator->getShippingAmount($cart);
 
     expect($shippingCost)->toBe(5.99);
 });
@@ -41,7 +41,7 @@ test('applies free shipping threshold', function () {
     $cart = createCartInstanceForTesting(items: $cartItems, shippingMethod: 'standard');
     $calculator = new ShippingCalculator(new DefaultShippingProvider);
 
-    expect($calculator->calculate($cart))->toBe(0.0);
+    expect($calculator->getShippingAmount($cart))->toBe(0.0);
 });
 
 test('shipping info includes VAT details', function () {

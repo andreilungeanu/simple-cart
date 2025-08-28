@@ -15,7 +15,7 @@ class DiscountCalculator implements DiscountCalculatorInterface
      * @param  float  $subtotal  The pre-calculated subtotal (items total before discounts).
      * @return float The total discount amount.
      */
-    public function calculate(CartInstance $cart, float $subtotal, float $shippingAmount = 0.0): float
+    public function getDiscountAmount(CartInstance $cart, float $subtotal, float $shippingAmount = 0.0): float
     {
         $fixedDiscountTotal = $cart->getDiscounts()
             ->where('type', 'fixed')

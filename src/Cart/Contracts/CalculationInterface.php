@@ -12,5 +12,5 @@ interface CalculationInterface
     /**
      * Perform a calculation based on the cart instance.
      */
-    public function calculate(CartInstance $cart): float;
+    // Marker interface for calculation services that operate on a CartInstance.
 }
