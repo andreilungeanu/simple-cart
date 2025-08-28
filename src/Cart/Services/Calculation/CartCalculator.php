@@ -46,8 +46,10 @@ class CartCalculator implements CartCalculatorInterface
 
     public function getTaxAmount(CartInstance $cart): float
     {
+        $tax = 0.0;
+
         if ($cart->isVatExempt()) {
-            return 0.0;
+            return $tax;
         }
 
         $itemsTax = $this->taxCalculator->calculate($cart);
@@ -59,7 +61,9 @@ class CartCalculator implements CartCalculatorInterface
 
         $extraCostsTax = $this->getExtraCostsTax($cart);
 
-        return $this->round($itemsTax + $shippingTax + $extraCostsTax);
+        $tax = $itemsTax + $shippingTax + $extraCostsTax;
+
+        return $this->round($tax);
     }
 
     public function getDiscountAmount(CartInstance $cart): float
@@ -98,12 +102,32 @@ class CartCalculator implements CartCalculatorInterface
 
     private function getExtraCostsTax(CartInstance $cart): float
     {
-        if ($cart->isVatExempt()) {
-            return 0.0;
-        }
-        $rate = $this->defaultVatRate($cart);
+        $tax = 0.0;
 
-        return $this->round($this->getExtraCostsTotal($cart) * $rate);
+        if ($cart->isVatExempt()) {
+            return $tax;
+        }
+
+        foreach ($cart->getExtraCosts() as $cost) {
+            $amount = $cost->type === 'percentage'
+                ? ($this->getSubtotal($cart) * $cost->amount) / 100
+                : $cost->amount;
+
+            $rate = $cost->vatRate ?? $this->defaultVatRate($cart);
+
+            if ($rate === null || $rate <= 0) {
+                continue;
+            }
+
+            // If VAT is already included in the cost amount, we do not add tax here
+            if ($cost->vatIncluded) {
+                continue;
+            }
+
+            $tax += $amount * $rate;
+        }
+
+        return $this->round($tax);
     }
 
     public function calculateShippingVat(CartInstance $cart): float
