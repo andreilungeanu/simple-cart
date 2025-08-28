@@ -4,7 +4,7 @@ namespace AndreiLungeanu\SimpleCart\Cart\Contracts;
 
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-interface TaxCalculatorInterface extends Calculator
+interface TaxCalculatorInterface extends CalculationInterface
 {
     /**
      * Calculate the total tax amount for the cart items.

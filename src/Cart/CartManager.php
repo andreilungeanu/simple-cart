@@ -2,10 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart;
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddCartItemActionInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepositoryInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
@@ -17,16 +17,16 @@ use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
 use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class CartManager implements CartManagerInterface
 {
     public function __construct(
-        protected readonly CartRepository $repository,
+        protected readonly CartRepositoryInterface $repository,
         protected readonly CartCalculatorInterface $calculator,
-        protected readonly AddItemToCartActionInterface $addItemAction,
+        protected readonly AddCartItemActionInterface $addItemAction,
         protected readonly Dispatcher $events
     ) {}
 
@@ -95,8 +95,8 @@ class CartManager implements CartManagerInterface
 
         $itemDTO = $item instanceof CartItemDTO ? $item : CartItemDTO::fromArray($item);
 
-        // TODO: Refactor to use a dedicated AddItem action if injected
-        $updatedCart = ($this->addItemAction)($cartInstance, $itemDTO);
+        // Use injected action handle() method
+        $updatedCart = $this->addItemAction->handle($cartInstance, $itemDTO);
 
         DB::transaction(function () use ($updatedCart) {
             $this->repository->save($updatedCart);

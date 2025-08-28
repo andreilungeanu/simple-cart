@@ -4,15 +4,15 @@ namespace AndreiLungeanu\SimpleCart;
 
 use AndreiLungeanu\SimpleCart\Cart\Actions\AddItemToCartAction;
 use AndreiLungeanu\SimpleCart\Cart\CartManager;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddCartItemActionInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\CartManagerInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepositoryInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\Listeners\CartEventSubscriber;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\CartCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\DiscountCalculator;
@@ -38,16 +38,16 @@ class SimpleCartServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(CartRepository::class, DatabaseCartRepository::class);
+        $this->app->singleton(CartRepositoryInterface::class, DatabaseCartRepository::class);
 
-        $this->app->bind(ShippingRateProvider::class, DefaultShippingProvider::class);
-        $this->app->bind(TaxRateProvider::class, DefaultTaxProvider::class);
+        $this->app->bind(ShippingRateProviderInterface::class, DefaultShippingProvider::class);
+        $this->app->bind(TaxRateProviderInterface::class, DefaultTaxProvider::class);
 
         $this->app->bind(ShippingCalculatorInterface::class, function ($app) {
-            return new ShippingCalculator($app->make(ShippingRateProvider::class));
+            return new ShippingCalculator($app->make(ShippingRateProviderInterface::class));
         });
         $this->app->bind(TaxCalculatorInterface::class, function ($app) {
-            return new TaxCalculator($app->make(TaxRateProvider::class));
+            return new TaxCalculator($app->make(TaxRateProviderInterface::class));
         });
         $this->app->bind(DiscountCalculatorInterface::class, DiscountCalculator::class);
 
@@ -56,11 +56,11 @@ class SimpleCartServiceProvider extends PackageServiceProvider
                 $app->make(ShippingCalculatorInterface::class),
                 $app->make(TaxCalculatorInterface::class),
                 $app->make(DiscountCalculatorInterface::class),
-                $app->make(TaxRateProvider::class)
+                $app->make(TaxRateProviderInterface::class)
             );
         });
 
-        $this->app->bind(AddItemToCartActionInterface::class, AddItemToCartAction::class);
+        $this->app->bind(AddCartItemActionInterface::class, AddItemToCartAction::class);
 
         $this->app->singleton(CartManagerInterface::class, CartManager::class);
 

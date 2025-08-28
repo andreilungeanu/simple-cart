@@ -7,7 +7,7 @@ use AndreiLungeanu\SimpleCart\CartInstance;
 /**
  * Interface for services that provide tax rates.
  */
-interface TaxRateProvider
+interface TaxRateProviderInterface
 {
     /**
      * Get the default tax rate applicable to the cart instance (e.g., based on its tax zone).

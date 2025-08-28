@@ -3,14 +3,15 @@
 namespace AndreiLungeanu\SimpleCart\Cart\Services\Calculation;
 
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
 class ShippingCalculator implements ShippingCalculatorInterface
 {
     public function __construct(
-        protected ShippingRateProvider $provider
+        protected ShippingRateProviderInterface $provider
     ) {}
 
     public function calculate(CartInstance $cart): float
@@ -31,10 +32,14 @@ class ShippingCalculator implements ShippingCalculatorInterface
 
         $info = $this->provider->getRate($cart, $shippingMethod);
 
-        return round($info['amount'] ?? 0.0, 2);
+        if (! $info instanceof ShippingRateDTO) {
+            return 0.0;
+        }
+
+        return round($info->amount ?? 0.0, 2);
     }
 
-    public function getShippingInfo(CartInstance $cart): ?array
+    public function getShippingInfo(CartInstance $cart): ?ShippingRateDTO
     {
         if (! $cart->getShippingMethod()) {
             return null;
@@ -42,13 +47,16 @@ class ShippingCalculator implements ShippingCalculatorInterface
 
         $info = $this->provider->getRate($cart, $cart->getShippingMethod());
 
-        if ($info['vat_rate'] !== null && ($info['vat_rate'] < 0 || $info['vat_rate'] > 1)) {
+        if (! $info instanceof ShippingRateDTO) {
+            return null;
+        }
+
+        if ($info->vatRate !== null && ($info->vatRate < 0 || $info->vatRate > 1)) {
             throw new \InvalidArgumentException('VAT rate must be between 0 and 1');
         }
 
         if ($cart->isVatExempt()) {
-            $info['vat_rate'] = 0.0;
-            $info['vat_included'] = false;
+            $info = new ShippingRateDTO($info->amount, 0.0, false);
         }
 
         return $info;

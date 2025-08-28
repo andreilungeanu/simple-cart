@@ -1,6 +1,6 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepositoryInterface;
 use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart as Cart;
 
 test('cart save and load preserves item data when provided as array', function () {
@@ -17,7 +17,7 @@ test('cart save and load preserves item data when provided as array', function (
 
     $id = $cartWrapper->getId();
 
-    $repo = app(CartRepository::class);
+    $repo = app(CartRepositoryInterface::class);
     $loaded = $repo->find($id);
 
     expect($loaded)->not->toBeNull();

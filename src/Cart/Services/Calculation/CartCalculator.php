@@ -6,7 +6,7 @@ use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
@@ -17,7 +17,7 @@ class CartCalculator implements CartCalculatorInterface
         protected ShippingCalculatorInterface $shippingCalculator,
         protected TaxCalculatorInterface $taxCalculator,
         protected DiscountCalculatorInterface $discountCalculator,
-        protected TaxRateProvider $taxRateProvider
+        protected TaxRateProviderInterface $taxRateProvider
     ) {}
 
     private function round(float $amount): float
