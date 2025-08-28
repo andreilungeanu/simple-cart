@@ -2,11 +2,11 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Services\Persistence;
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepository;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\CartRepositoryInterface;
 use AndreiLungeanu\SimpleCart\Cart\Models\Cart as CartModel;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-class DatabaseCartRepository implements CartRepository
+class DatabaseCartRepository implements CartRepositoryInterface
 {
     /**
      * Find a cart by its ID and return it as a CartInstance object.

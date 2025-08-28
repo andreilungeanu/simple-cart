@@ -6,7 +6,7 @@ use AndreiLungeanu\SimpleCart\Cart\Contracts\CartCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\DiscountCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingCalculatorInterface;
 use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxCalculatorInterface;
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
@@ -17,7 +17,7 @@ class CartCalculator implements CartCalculatorInterface
         protected ShippingCalculatorInterface $shippingCalculator,
         protected TaxCalculatorInterface $taxCalculator,
         protected DiscountCalculatorInterface $discountCalculator,
-        protected TaxRateProvider $taxRateProvider
+        protected TaxRateProviderInterface $taxRateProvider
     ) {}
 
     private function round(float $amount): float
@@ -41,7 +41,7 @@ class CartCalculator implements CartCalculatorInterface
 
     public function getShippingAmount(CartInstance $cart): float
     {
-        return $this->shippingCalculator->calculate($cart);
+        return $this->shippingCalculator->getShippingAmount($cart);
     }
 
     public function getTaxAmount(CartInstance $cart): float
@@ -52,7 +52,7 @@ class CartCalculator implements CartCalculatorInterface
             return $tax;
         }
 
-        $itemsTax = $this->taxCalculator->calculate($cart);
+        $itemsTax = $this->taxCalculator->getTaxAmount($cart);
 
         $shippingInfo = $cart->getShippingVatInfo();
         $shippingTax = $cart->getShippingMethod() && ! $shippingInfo['included']
@@ -72,7 +72,7 @@ class CartCalculator implements CartCalculatorInterface
 
         $shippingAmount = $this->getShippingAmount($cart);
 
-        return $this->discountCalculator->calculate($cart, $subtotal, $shippingAmount);
+        return $this->discountCalculator->getDiscountAmount($cart, $subtotal, $shippingAmount);
     }
 
     public function getTotal(CartInstance $cart): float

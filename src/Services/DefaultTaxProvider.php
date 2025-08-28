@@ -2,10 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Services;
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\TaxRateProviderInterface;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-class DefaultTaxProvider implements TaxRateProvider
+class DefaultTaxProvider implements TaxRateProviderInterface
 {
     public function getRate(CartInstance $cart): float
     {

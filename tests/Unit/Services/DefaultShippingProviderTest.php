@@ -17,11 +17,10 @@ test('shipping rate includes VAT information', function () {
 
     $rate = $provider->getRate($cart, 'standard');
 
-    expect($rate)
-        ->toHaveKey('amount')
-        ->toHaveKey('vat_rate')
-        ->toHaveKey('vat_included')
-        ->and($rate['vat_included'])->toBeFalse();
+    expect($rate)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO::class);
+    expect($rate->amount)->toBeFloat();
+    expect(is_null($rate->vatRate) || is_float($rate->vatRate))->toBeTrue();
+    expect($rate->vatIncluded)->toBeFalse();
 });
 
 test('returns correct structure for available shipping methods', function () {
@@ -37,10 +36,12 @@ test('returns correct structure for available shipping methods', function () {
 
     $methods = $provider->getAvailableMethods($cart);
 
-    expect($methods)->toBeArray()
-        ->toHaveKeys(['standard', 'express'])
-        ->and($methods['standard'])->toHaveKeys(['name', 'vat_rate', 'vat_included'])
-        ->and($methods['standard']['name'])->toBe('Standard')
-        ->and($methods['standard']['vat_rate'])->toBeNull()
-        ->and($methods['standard']['vat_included'])->toBeFalse();
+    expect($methods)->toBeArray();
+    // map to ids for assertion
+    $ids = array_map(fn ($m) => $m->id, $methods);
+    expect($ids)->toContain('standard')->and($ids)->toContain('express');
+
+    $standard = array_values(array_filter($methods, fn ($m) => $m->id === 'standard'))[0];
+    expect($standard->name)->toBe('Standard');
+    expect(is_null($standard->description) || is_string($standard->description))->toBeTrue();
 });

@@ -7,12 +7,12 @@ use AndreiLungeanu\SimpleCart\CartInstance;
 interface DiscountCalculatorInterface
 {
     /**
-     * Calculate the total discount amount for the cart.
+     * Get the total discount amount for the cart.
      *
      * @param  CartInstance  $cart  The cart instance.
      * @param  float  $subtotal  The pre-calculated subtotal (items total before discounts).
      * @param  float  $shippingAmount  The calculated shipping amount (optional, used for shipping discounts).
      * @return float The total discount amount.
      */
-    public function calculate(CartInstance $cart, float $subtotal, float $shippingAmount = 0.0): float;
+    public function getDiscountAmount(CartInstance $cart, float $subtotal, float $shippingAmount = 0.0): float;
 }

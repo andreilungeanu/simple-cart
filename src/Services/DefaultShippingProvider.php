@@ -2,12 +2,14 @@
 
 namespace AndreiLungeanu\SimpleCart\Services;
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProvider;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProviderInterface;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingMethodDTO;
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-class DefaultShippingProvider implements ShippingRateProvider
+class DefaultShippingProvider implements ShippingRateProviderInterface
 {
-    public function getRate(CartInstance $cart, string $method): array
+    public function getRate(CartInstance $cart, string $method): ?ShippingRateDTO
     {
         $settings = config('simple-cart.shipping.settings', []);
         $methods = $settings['methods'] ?? [];
@@ -18,21 +20,22 @@ class DefaultShippingProvider implements ShippingRateProvider
             ? 0.0
             : ($methodSettings['vat_rate'] ?? null);
 
-        return [
-            'amount' => $cost,
-            'vat_rate' => $vatRate,
-            'vat_included' => false,
-        ];
+        return new ShippingRateDTO(
+            amount: (float) $cost,
+            vatRate: $vatRate,
+            vatIncluded: false,
+        );
     }
 
     public function getAvailableMethods(CartInstance $cart): array
     {
         return collect(config('simple-cart.shipping.settings.methods', []))
-            ->map(fn ($methodConfig, $key) => [
-                'name' => $methodConfig['name'] ?? 'Unknown Method',
-                'vat_rate' => null,
-                'vat_included' => false,
-            ])
+            ->map(fn ($methodConfig, $key) => new ShippingMethodDTO(
+                id: (string) $key,
+                name: $methodConfig['name'] ?? 'Unknown Method',
+                description: $methodConfig['description'] ?? null,
+            ))
+            ->values()
             ->toArray();
     }
 }
