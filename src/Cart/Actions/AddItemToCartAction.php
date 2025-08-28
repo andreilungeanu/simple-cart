@@ -2,11 +2,11 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Actions;
 
-use AndreiLungeanu\SimpleCart\Cart\Contracts\AddItemToCartActionInterface;
+use AndreiLungeanu\SimpleCart\Cart\Contracts\AddCartItemActionInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-class AddItemToCartAction implements AddItemToCartActionInterface
+class AddItemToCartAction implements AddCartItemActionInterface
 {
     public function __construct() {}
 
@@ -17,7 +17,7 @@ class AddItemToCartAction implements AddItemToCartActionInterface
      * @param  CartItemDTO  $itemDTO  The item to add or update.
      * @return CartInstance The modified cart instance.
      */
-    public function __invoke(CartInstance $cart, CartItemDTO $itemDTO): CartInstance
+    public function handle(CartInstance $cart, CartItemDTO $itemDTO): CartInstance
     {
         $items = $cart->getItems();
         $existingItemIndex = $items->search(fn (CartItemDTO $item) => $item->id === $itemDTO->id);

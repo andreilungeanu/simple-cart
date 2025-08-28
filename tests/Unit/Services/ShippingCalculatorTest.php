@@ -51,10 +51,11 @@ test('shipping info includes VAT details', function () {
 
     $info = $calculator->getShippingInfo($cart);
 
-    expect($info)
-        ->toHaveKey('amount')
-        ->toHaveKey('vat_rate')
-        ->toHaveKey('vat_included');
+    // now returns a ShippingRateDTO
+    expect($info)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO::class);
+    expect($info->amount)->toBeFloat();
+    expect(is_null($info->vatRate) || is_float($info->vatRate))->toBeTrue();
+    expect($info->vatIncluded)->toBeBool();
 });
 
 test('respects VAT exemption for shipping', function () {
@@ -69,7 +70,8 @@ test('respects VAT exemption for shipping', function () {
 
     $info = $calculator->getShippingInfo($cart);
 
-    expect($info['vat_rate'])->toBe(0.0);
+    expect($info)->toBeInstanceOf(\AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO::class);
+    expect($info->vatRate)->toBe(0.0);
 });
 
 test('calculator uses provider to get shipping info', function () {
@@ -80,11 +82,11 @@ test('calculator uses provider to get shipping info', function () {
     $mockProvider->shouldReceive('getRate')
         ->once()
         ->with($cart, 'express')
-        ->andReturn(['amount' => 15.99, 'vat_rate' => 0.19, 'vat_included' => false]);
+        ->andReturn(new \AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO(amount: 15.99, vatRate: 0.19, vatIncluded: false));
 
     $calculator = new ShippingCalculator($mockProvider);
 
     $info = $calculator->getShippingInfo($cart);
 
-    expect($info['amount'])->toBe(15.99);
+    expect($info->amount)->toBe(15.99);
 });

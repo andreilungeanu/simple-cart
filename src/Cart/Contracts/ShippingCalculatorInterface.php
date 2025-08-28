@@ -2,9 +2,10 @@
 
 namespace AndreiLungeanu\SimpleCart\Cart\Contracts;
 
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingRateDTO;
 use AndreiLungeanu\SimpleCart\CartInstance;
 
-interface ShippingCalculatorInterface extends Calculator
+interface ShippingCalculatorInterface extends CalculationInterface
 {
     /**
      * Calculate the shipping cost for the given cart.
@@ -16,9 +17,6 @@ interface ShippingCalculatorInterface extends Calculator
 
     /**
      * Get detailed shipping information (rate, VAT info) for the cart's selected method.
-     *
-     * @param  CartInstance  $cart  The cart instance.
-     * @return array|null Shipping details or null if no method selected.
      */
-    public function getShippingInfo(CartInstance $cart): ?array;
+    public function getShippingInfo(CartInstance $cart): ?ShippingRateDTO;
 }
