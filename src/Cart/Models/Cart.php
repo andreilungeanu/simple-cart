@@ -46,5 +46,6 @@ class Cart extends Model
         'discount_amount' => 'decimal:2',
         'subtotal_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'expires_at' => 'datetime',
     ];
 }

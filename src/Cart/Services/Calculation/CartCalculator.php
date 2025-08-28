@@ -115,7 +115,7 @@ class CartCalculator implements CartCalculatorInterface
 
             $rate = $cost->vatRate ?? $this->defaultVatRate($cart);
 
-            if ($rate === null || $rate <= 0) {
+            if ($rate == null || $rate <= 0) {
                 continue;
             }
 
