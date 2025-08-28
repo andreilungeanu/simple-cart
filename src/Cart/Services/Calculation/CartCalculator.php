@@ -70,7 +70,9 @@ class CartCalculator implements CartCalculatorInterface
     {
         $subtotal = $this->getSubtotal($cart);
 
-        return $this->discountCalculator->calculate($cart, $subtotal);
+        $shippingAmount = $this->getShippingAmount($cart);
+
+        return $this->discountCalculator->calculate($cart, $subtotal, $shippingAmount);
     }
 
     public function getTotal(CartInstance $cart): float

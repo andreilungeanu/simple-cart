@@ -15,7 +15,7 @@ class DiscountCalculator implements DiscountCalculatorInterface
      * @param  float  $subtotal  The pre-calculated subtotal (items total before discounts).
      * @return float The total discount amount.
      */
-    public function calculate(CartInstance $cart, float $subtotal): float
+    public function calculate(CartInstance $cart, float $subtotal, float $shippingAmount = 0.0): float
     {
         $fixedDiscountTotal = $cart->getDiscounts()
             ->where('type', 'fixed')
@@ -25,9 +25,13 @@ class DiscountCalculator implements DiscountCalculatorInterface
             ->where('type', 'percentage')
             ->sum(fn (DiscountDTO $d) => $this->calculatePercentage($d, $subtotal - $fixedDiscountTotal));
 
+        // Calculate shipping discounts but cap the aggregate shipping discount
+        // to the total shipping amount (so discounts can make shipping free but not negative).
         $shippingDiscountTotal = $cart->getDiscounts()
             ->where('type', 'shipping')
-            ->sum(fn (DiscountDTO $d) => $this->calculateShipping($d, $cart));
+            ->sum(fn (DiscountDTO $d) => $this->calculateShipping($d, $shippingAmount));
+
+        $shippingDiscountTotal = min($shippingDiscountTotal, max(0.0, $shippingAmount));
 
         return round($fixedDiscountTotal + $percentageDiscountTotal + $shippingDiscountTotal, 2);
     }
@@ -52,9 +56,23 @@ class DiscountCalculator implements DiscountCalculatorInterface
     /**
      * Calculate shipping discount.
      */
-    private function calculateShipping(DiscountDTO $discount, CartInstance $cart): float
+    private function calculateShipping(DiscountDTO $discount, float $shippingAmount): float
     {
-        // TODO: Implement actual shipping discount logic.
-        return $discount->value;
+        if ($shippingAmount <= 0) {
+            return 0.0;
+        }
+
+        if ($discount->value <= 0) {
+            return 0.0;
+        }
+
+        // Interpret shipping discount value as fixed amount when type 'shipping' is used.
+        // We also support percentage mode via the 'appliesTo' field if set to 'percentage'.
+        if ($discount->appliesTo === 'percentage') {
+            return ($shippingAmount * $discount->value) / 100;
+        }
+
+        // Default: fixed amount
+        return min($discount->value, $shippingAmount);
     }
 }
