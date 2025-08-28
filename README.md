@@ -327,6 +327,7 @@ The package fires the following events, allowing you to hook into the cart lifec
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartCreated`: Fired when a new cart is created. Contains the `CartInstance`.
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. Contains the updated `CartInstance`.
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartCleared`: Fired when the cart is cleared. Contains the `cartId`.
+- `AndreiLungeanu\SimpleCart\Cart\Events\CartDeleted`: Fired when a cart is destroyed. Contains the `cartId`.
 
 You can create listeners for these events as per standard Laravel event handling.
 
@@ -339,7 +340,7 @@ composer test
 
 ## TTL / Expiry and Purging
 
-This package now supports a TTL (time-to-live) for persisted carts. When `config('simple-cart.storage.ttl')` is set to a positive number (seconds), the repository will set an `expires_at` timestamp on each saved cart.
+This package supports a TTL (time-to-live) for persisted carts. When `config('simple-cart.storage.ttl')` is set to a positive number (seconds), the repository will set an `expires_at` timestamp on each saved cart.
 
 To purge expired carts, a console command is provided:
 

@@ -36,7 +36,7 @@ test('calculates tax based on zone', function () {
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'US');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
-    expect($calculator->calculate($cart))->toBe(7.25);
+    expect($calculator->getTaxAmount($cart))->toBe(7.25);
 });
 
 test('returns zero tax for unknown zone', function () {
@@ -44,7 +44,7 @@ test('returns zero tax for unknown zone', function () {
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'UNKNOWN');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
-    expect($calculator->calculate($cart))->toBe(0.0);
+    expect($calculator->getTaxAmount($cart))->toBe(0.0);
 });
 
 test('applies category specific tax rates', function () {
@@ -52,7 +52,7 @@ test('applies category specific tax rates', function () {
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
-    expect($calculator->calculate($cart))->toBe(5.00);
+    expect($calculator->getTaxAmount($cart))->toBe(5.00);
 });
 
 test('handles mixed category tax rates', function () {
@@ -63,19 +63,19 @@ test('handles mixed category tax rates', function () {
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
 
-    expect($calculator->calculate($cart))->toBe(24.00);
+    expect($calculator->getTaxAmount($cart))->toBe(24.00);
 });
 
 test('applies default rate when category not specified', function () {
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO');
     $calculator = new TaxCalculator(new DefaultTaxProvider);
-    expect($calculator->calculate($cart))->toBe(19.00);
+    expect($calculator->getTaxAmount($cart))->toBe(19.00);
 });
 
 test('returns zero tax when cart is VAT exempt', function () {
     $cartItems = [new CartItemDTO(id: '1', name: 'Test Product 1', quantity: 1, price: 100.00)];
     $cart = createCartInstanceForTesting(items: $cartItems, taxZone: 'RO', vatExempt: true);
     $calculator = new TaxCalculator(new DefaultTaxProvider);
-    expect($calculator->calculate($cart))->toBe(0.0);
+    expect($calculator->getTaxAmount($cart))->toBe(0.0);
 });

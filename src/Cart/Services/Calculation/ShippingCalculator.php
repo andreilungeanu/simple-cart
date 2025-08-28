@@ -14,7 +14,7 @@ class ShippingCalculator implements ShippingCalculatorInterface
         protected ShippingRateProviderInterface $provider
     ) {}
 
-    public function calculate(CartInstance $cart): float
+    public function getShippingAmount(CartInstance $cart): float
     {
         $shippingMethod = $cart->getShippingMethod();
         if (! $shippingMethod) {

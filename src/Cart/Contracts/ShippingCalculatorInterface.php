@@ -8,12 +8,12 @@ use AndreiLungeanu\SimpleCart\CartInstance;
 interface ShippingCalculatorInterface extends CalculationInterface
 {
     /**
-     * Calculate the shipping cost for the given cart.
+     * Get the shipping cost for the given cart.
      *
      * @param  CartInstance  $cart  The cart instance.
      * @return float The calculated shipping cost.
      */
-    public function calculate(CartInstance $cart): float;
+    public function getShippingAmount(CartInstance $cart): float;
 
     /**
      * Get detailed shipping information (rate, VAT info) for the cart's selected method.
