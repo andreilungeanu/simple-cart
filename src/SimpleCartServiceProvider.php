@@ -19,11 +19,11 @@ use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
+use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
 use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
 
 class SimpleCartServiceProvider extends PackageServiceProvider
 {

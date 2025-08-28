@@ -5,7 +5,6 @@ namespace AndreiLungeanu\SimpleCart\Tests\Feature;
 use AndreiLungeanu\SimpleCart\Cart\Models\Cart as CartModel;
 use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
 use AndreiLungeanu\SimpleCart\Tests\TestCase;
-use Illuminate\Support\Carbon;
 
 class PurgeExpiredCartsTest extends TestCase
 {
@@ -45,7 +44,7 @@ class PurgeExpiredCartsTest extends TestCase
             'expires_at' => null,
         ]);
 
-        $repo = new DatabaseCartRepository();
+        $repo = new DatabaseCartRepository;
 
         $deleted = $repo->purgeExpired();
 
@@ -69,7 +68,7 @@ class PurgeExpiredCartsTest extends TestCase
         ]);
 
         $this->artisan('cart:purge-expired')
-            ->expectsOutput("Purged 1 expired cart(s).")
+            ->expectsOutput('Purged 1 expired cart(s).')
             ->assertExitCode(0);
 
         $this->assertNull(CartModel::find('expired-cmd'));
