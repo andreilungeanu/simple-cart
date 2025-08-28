@@ -23,6 +23,7 @@ use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
 
 class SimpleCartServiceProvider extends PackageServiceProvider
 {
@@ -31,7 +32,8 @@ class SimpleCartServiceProvider extends PackageServiceProvider
         $package
             ->name('simple-cart')
             ->hasConfigFile()
-            ->hasMigration('create_carts_table');
+            ->hasMigration('create_carts_table')
+            ->hasCommand(PurgeExpiredCartsCommand::class);
     }
 
     public function packageRegistered(): void

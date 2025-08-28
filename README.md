@@ -258,7 +258,7 @@ return [
     'storage' => [
         // 'driver' => 'database', // Only database driver is currently implemented via CartRepository binding
         'repository' => DatabaseCartRepository::class, // Specify the repository implementation
-        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days in seconds (Note: TTL logic needs implementation in repository/cleanup job)
+        'ttl' => env('CART_TTL', 30 * 24 * 60 * 60), // 30 days in seconds; carts will have an `expires_at` set on save when TTL > 0
     ],
 
     // Tax calculation settings
@@ -336,6 +336,24 @@ Run the test suite using Pest:
 ```bash
 composer test
 ```
+
+## TTL / Expiry and Purging
+
+This package now supports a TTL (time-to-live) for persisted carts. When `config('simple-cart.storage.ttl')` is set to a positive number (seconds), the repository will set an `expires_at` timestamp on each saved cart.
+
+To purge expired carts, a console command is provided:
+
+```bash
+php artisan cart:purge-expired
+```
+
+You can add this command to your scheduler to run periodically. Example in `App\Console\Kernel::schedule`:
+
+```php
+$schedule->command('cart:purge-expired')->daily();
+```
+
+If `CART_TTL` is set to `0` or omitted, carts will not be assigned an expiry date.
 
 ## Credits
 

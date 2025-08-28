@@ -50,6 +50,14 @@ class DatabaseCartRepository implements CartRepository
             'shipping_vat_included' => $cartInstance->getShippingVatInfo()['included'],
         ];
 
+        // Set expires_at based on configured TTL (in seconds). If ttl is null or <= 0,
+        // we do not set an expiration.
+        $ttl = config('simple-cart.storage.ttl');
+
+        if (is_numeric($ttl) && $ttl > 0) {
+            $dataToSave['expires_at'] = now()->addSeconds((int) $ttl);
+        }
+
         CartModel::updateOrCreate(['id' => $id], $dataToSave);
 
         return $id;
@@ -76,6 +84,17 @@ class DatabaseCartRepository implements CartRepository
         return CartModel::where('user_id', $userId)
             ->get()
             ->map(fn (CartModel $cartModel) => $this->hydrateFromModel($cartModel));
+    }
+
+    /**
+     * Purge expired carts from the database.
+     * Returns the number of deleted rows.
+     */
+    public function purgeExpired(): int
+    {
+        return CartModel::whereNotNull('expires_at')
+            ->where('expires_at', '<', now())
+            ->delete();
     }
 
     /**
