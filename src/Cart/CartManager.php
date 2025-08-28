@@ -18,6 +18,8 @@ use AndreiLungeanu\SimpleCart\CartInstance;
 use AndreiLungeanu\SimpleCart\FluentCart;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class CartManager implements CartManagerInterface
 {
@@ -72,7 +74,10 @@ class CartManager implements CartManagerInterface
             taxZone: $taxZone
         );
 
-        $this->repository->save($cart);
+        DB::transaction(function () use ($cart) {
+            $this->repository->save($cart);
+        });
+
         $this->events->dispatch(new CartCreated($cart));
 
         return new FluentCart($id);
@@ -93,7 +98,10 @@ class CartManager implements CartManagerInterface
         // TODO: Refactor to use a dedicated AddItem action if injected
         $updatedCart = ($this->addItemAction)($cartInstance, $itemDTO);
 
-        $this->repository->save($updatedCart);
+        DB::transaction(function () use ($updatedCart) {
+            $this->repository->save($updatedCart);
+        });
+
         $this->events->dispatch(new CartUpdated($updatedCart));
 
         return $updatedCart;
@@ -116,7 +124,11 @@ class CartManager implements CartManagerInterface
 
         if ($updatedItems->count() < $initialCount) {
             $cartInstance->setItems($updatedItems);
-            $this->repository->save($cartInstance);
+
+            DB::transaction(function () use ($cartInstance) {
+                $this->repository->save($cartInstance);
+            });
+
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
 
@@ -129,7 +141,7 @@ class CartManager implements CartManagerInterface
     public function updateQuantity(string $cartId, string $itemId, int $quantity): CartInstance
     {
         if ($quantity <= 0) {
-            throw new \InvalidArgumentException('Quantity must be positive. Use removeItem to remove.');
+            throw new InvalidArgumentException('Quantity must be positive. Use removeItem to remove.');
         }
 
         $cartInstance = $this->getInstance($cartId);
@@ -153,7 +165,11 @@ class CartManager implements CartManagerInterface
         }
 
         $cartInstance->setItems($updatedItems);
-        $this->repository->save($cartInstance);
+
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -175,7 +191,10 @@ class CartManager implements CartManagerInterface
         $discounts->push($discountDTO);
         $cartInstance->setDiscounts($discounts);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -198,7 +217,11 @@ class CartManager implements CartManagerInterface
 
         if ($updatedDiscounts->count() < $initialCount) {
             $cartInstance->setDiscounts($updatedDiscounts);
-            $this->repository->save($cartInstance);
+
+            DB::transaction(function () use ($cartInstance) {
+                $this->repository->save($cartInstance);
+            });
+
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
 
@@ -221,7 +244,10 @@ class CartManager implements CartManagerInterface
         $extraCosts->push($extraCostDTO);
         $cartInstance->setExtraCosts($extraCosts);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -244,7 +270,11 @@ class CartManager implements CartManagerInterface
 
         if ($updatedCosts->count() < $initialCount) {
             $cartInstance->setExtraCosts($updatedCosts);
-            $this->repository->save($cartInstance);
+
+            DB::transaction(function () use ($cartInstance) {
+                $this->repository->save($cartInstance);
+            });
+
             $this->events->dispatch(new CartUpdated($cartInstance));
         }
 
@@ -265,7 +295,10 @@ class CartManager implements CartManagerInterface
         $notes->push($note);
         $cartInstance->setNotes($notes);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -293,7 +326,10 @@ class CartManager implements CartManagerInterface
         );
         $cartInstance->setShippingMethodInternal($method);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -311,7 +347,10 @@ class CartManager implements CartManagerInterface
 
         $cartInstance->setVatExemptInternal($exempt);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartUpdated($cartInstance));
 
         return $cartInstance;
@@ -335,7 +374,10 @@ class CartManager implements CartManagerInterface
         $cartInstance->setShippingVatInfoInternal(null, false);
         $cartInstance->setVatExemptInternal(false);
 
-        $this->repository->save($cartInstance);
+        DB::transaction(function () use ($cartInstance) {
+            $this->repository->save($cartInstance);
+        });
+
         $this->events->dispatch(new CartCleared($cartId));
 
         return $cartInstance;
@@ -346,7 +388,11 @@ class CartManager implements CartManagerInterface
      */
     public function destroy(string $cartId): bool
     {
-        $deleted = $this->repository->delete($cartId);
+        $deleted = false;
+
+        DB::transaction(function () use ($cartId, &$deleted) {
+            $deleted = $this->repository->delete($cartId);
+        });
 
         if ($deleted) {
             $this->events->dispatch(new CartDeleted($cartId));
