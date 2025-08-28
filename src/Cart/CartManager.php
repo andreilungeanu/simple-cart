@@ -11,6 +11,7 @@ use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCleared;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartCreated;
+use AndreiLungeanu\SimpleCart\Cart\Events\CartDeleted;
 use AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Cart\Exceptions\CartException;
 use AndreiLungeanu\SimpleCart\CartInstance;
@@ -345,10 +346,12 @@ class CartManager implements CartManagerInterface
      */
     public function destroy(string $cartId): bool
     {
-        // TODO: Consider dispatching an event before deletion?
         $deleted = $this->repository->delete($cartId);
 
-        // TODO: Dispatch event after successful deletion?
+        if ($deleted) {
+            $this->events->dispatch(new CartDeleted($cartId));
+        }
+
         return $deleted;
     }
 
