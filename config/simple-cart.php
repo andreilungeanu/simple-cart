@@ -1,7 +1,7 @@
 <?php
 
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultTaxProvider;
 
 return [
     'storage' => [

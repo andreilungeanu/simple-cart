@@ -20,8 +20,8 @@ use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
 use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultTaxProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

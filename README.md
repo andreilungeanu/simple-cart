@@ -49,7 +49,7 @@ Use the `SimpleCart` facade to `create` or `find` a cart. These methods return a
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 
 // Create a new cart instance (returns an object for chaining)
 $cart = SimpleCart::create(userId: 'user-123', taxZone: 'RO');
@@ -97,7 +97,7 @@ SimpleCart::destroy($cartId);
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 
 // Create cart with a specific tax zone
 $cart = SimpleCart::create(taxZone: 'RO');
@@ -165,7 +165,7 @@ $cart->setShippingMethod('', []);
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
 
 // Create cart and add items first...
 $cart = SimpleCart::create();
@@ -203,7 +203,7 @@ echo "Total after removing WELCOME10: " . $totalAfterRemove;
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
 
 // Create cart and add items first...
 $cart = SimpleCart::create(taxZone: 'RO');
@@ -249,9 +249,9 @@ echo "Total after removing Handling Fee: " . $totalAfterRemove;
 ```php
 <?php
 
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider; // Correct - outside Cart domain
-use AndreiLungeanu\SimpleCart\Services\DefaultTaxProvider; // Correct - outside Cart domain
-use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository; // Updated namespace
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
 
 return [
     // Persistence settings
@@ -325,7 +325,7 @@ return [
 The package fires the following events, allowing you to hook into the cart lifecycle:
 
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartCreated`: Fired when a new cart is created. Contains the `CartInstance`.
-- `AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. Contains the updated `CartInstance`.
+- `AndreiLungeanu\SimpleCart\Cart\Events\CartUpdated`: Fired when items, discounts, shipping, etc., are modified. 
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartCleared`: Fired when the cart is cleared. Contains the `cartId`.
 - `AndreiLungeanu\SimpleCart\Cart\Events\CartDeleted`: Fired when a cart is destroyed. Contains the `cartId`.
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace AndreiLungeanu\SimpleCart\Services;
+namespace AndreiLungeanu\SimpleCart\Cart\Services\Providers;
 
 use AndreiLungeanu\SimpleCart\Cart\Contracts\ShippingRateProviderInterface;
 use AndreiLungeanu\SimpleCart\Cart\DTOs\ShippingMethodDTO;

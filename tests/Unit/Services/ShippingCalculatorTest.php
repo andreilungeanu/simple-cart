@@ -4,7 +4,7 @@ namespace AndreiLungeanu\SimpleCart\Tests\Unit\Services;
 
 use AndreiLungeanu\SimpleCart\Cart\DTOs\CartItemDTO;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator;
-use AndreiLungeanu\SimpleCart\Services\DefaultShippingProvider;
+use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultShippingProvider;
 use Mockery;
 
 afterEach(function () {
