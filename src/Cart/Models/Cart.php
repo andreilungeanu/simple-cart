@@ -16,11 +16,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $shipping_vat_included
  * @property ?string $tax_zone
  * @property bool $vat_exempt
- * @property ?float $tax_amount
- * @property ?float $shipping_amount
- * @property ?float $discount_amount
- * @property ?float $subtotal_amount
- * @property ?float $total_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -34,18 +29,16 @@ class Cart extends Model
 
     protected $casts = [
         'id' => 'string',
+        'user_id' => 'string',
         'items' => 'array',
         'discounts' => 'array',
         'notes' => 'array',
         'extra_costs' => 'array',
-        'vat_exempt' => 'boolean',
+        'shipping_method' => 'string',
         'shipping_vat_rate' => 'decimal:4',
         'shipping_vat_included' => 'boolean',
-        'tax_amount' => 'decimal:2',
-        'shipping_amount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'subtotal_amount' => 'decimal:2',
-        'total_amount' => 'decimal:2',
+        'tax_zone' => 'string',
+        'vat_exempt' => 'boolean',
         'expires_at' => 'datetime',
     ];
 }

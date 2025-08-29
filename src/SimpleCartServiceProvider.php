@@ -19,9 +19,9 @@ use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Calculation\TaxCalculator;
 use AndreiLungeanu\SimpleCart\Cart\Services\Persistence\DatabaseCartRepository;
-use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
 use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultShippingProvider;
 use AndreiLungeanu\SimpleCart\Cart\Services\Providers\DefaultTaxProvider;
+use AndreiLungeanu\SimpleCart\Console\PurgeExpiredCartsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
