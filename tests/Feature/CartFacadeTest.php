@@ -30,7 +30,7 @@ describe('Cart Facade', function () {
 
     it('can calculate totals via facade', function () {
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_method' => 'standard', 'tax_zone' => 'US']);
+        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
         $cart->refresh();
 
         $subtotal = Cart::calculateSubtotal($cart);

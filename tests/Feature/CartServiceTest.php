@@ -184,7 +184,7 @@ describe('CartService - Item Management', function () {
         $cart->refresh();
         expect($cart->items->count())->toBe(0)
             ->and($cart->discount_data)->toBe([])
-            ->and($cart->shipping_method)->toBeNull();
+            ->and($cart->shipping_data)->toBeNull();
     });
 
 });
@@ -206,7 +206,7 @@ describe('CartService - Calculations', function () {
     it('calculates shipping cost correctly', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_method' => 'standard']);
+        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99]]);
         $cart->refresh();
 
         $shipping = $cartService->calculateShipping($cart);
@@ -226,7 +226,7 @@ describe('CartService - Calculations', function () {
             'quantity' => 1,
         ]);
 
-        $cart->update(['shipping_method' => 'standard']);
+        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99]]);
         $cart->refresh();
 
         $shipping = $cartService->calculateShipping($cart);
@@ -251,7 +251,7 @@ describe('CartService - Calculations', function () {
     it('calculates total correctly', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_method' => 'standard', 'tax_zone' => 'US']);
+        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
         $cart->refresh();
 
         $total = $cartService->calculateTotal($cart);
@@ -328,22 +328,29 @@ describe('CartService - Discounts & Settings', function () {
         expect($cart->discount_data)->not()->toHaveKey('SAVE20');
     });
 
-    it('can set shipping method', function () {
+    it('can apply shipping', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->setShippingMethod($cart, 'express');
+        $cartService->applyShipping($cart, [
+            'method_name' => 'Express Shipping',
+            'cost' => 15.99,
+            'carrier' => 'UPS',
+        ]);
 
         $cart->refresh();
-        expect($cart->shipping_method)->toBe('express');
+        expect($cart->shipping_data['method_name'])->toBe('Express Shipping');
+        expect($cart->shipping_data['cost'])->toBe(15.99);
+        expect($cart->shipping_data['carrier'])->toBe('UPS');
     });
 
-    it('throws exception for invalid shipping method', function () {
+    it('validates shipping data requirements', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        expect(fn () => $cartService->setShippingMethod($cart, 'invalid-method'))
-            ->toThrow(CartException::class, 'Invalid shipping method: invalid-method');
+        expect(fn () => $cartService->applyShipping($cart, [
+            'cost' => 15.99, // Missing method_name
+        ]))->toThrow(CartException::class, 'Shipping data must include method_name and cost');
     });
 
     it('can set tax zone', function () {
@@ -371,7 +378,7 @@ describe('CartService - Cart Summary', function () {
     it('returns comprehensive cart summary', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_method' => 'standard', 'tax_zone' => 'US']);
+        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
         $cart->refresh();
 
         $summary = $cartService->getCartSummary($cart);

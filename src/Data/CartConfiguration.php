@@ -8,9 +8,8 @@ readonly class CartConfiguration
 {
     public function __construct(
         public int $ttlDays,
-        public float $freeShippingThreshold,
+        public ?float $freeShippingThreshold,
         public array $taxSettings,
-        public array $shippingMethods,
         public array $discounts,
         public string $defaultTaxZone = 'US',
         public bool $allowDiscountStacking = false,
@@ -19,11 +18,23 @@ readonly class CartConfiguration
 
     public static function fromConfig(array $config): self
     {
+        // Check if the shipping config exists and has the threshold key
+        $threshold = 100.0; // default
+        if (isset($config['shipping']) && array_key_exists('free_shipping_threshold', $config['shipping'])) {
+            $threshold = $config['shipping']['free_shipping_threshold'];
+        }
+
+        // Convert 0 or null to null to disable free shipping
+        if ($threshold === 0 || $threshold === 0.0 || $threshold === null) {
+            $threshold = null;
+        } else {
+            $threshold = (float) $threshold;
+        }
+
         return new self(
             ttlDays: $config['storage']['ttl_days'] ?? 30,
-            freeShippingThreshold: $config['shipping']['settings']['free_shipping_threshold'] ?? 100.0,
+            freeShippingThreshold: $threshold,
             taxSettings: $config['tax']['settings']['zones'] ?? [],
-            shippingMethods: $config['shipping']['settings']['methods'] ?? [],
             discounts: $config['discounts']['codes'] ?? [],
             defaultTaxZone: $config['tax']['default_zone'] ?? 'US',
             allowDiscountStacking: $config['discounts']['allow_stacking'] ?? false,
@@ -34,15 +45,5 @@ readonly class CartConfiguration
     public function getTaxSettings(string $zone): ?array
     {
         return $this->taxSettings[$zone] ?? null;
-    }
-
-    public function getShippingMethod(string $method): ?array
-    {
-        return $this->shippingMethods[$method] ?? null;
-    }
-
-    public function getShippingMethods(): array
-    {
-        return $this->shippingMethods;
     }
 }

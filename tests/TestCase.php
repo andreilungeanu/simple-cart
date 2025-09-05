@@ -72,20 +72,6 @@ abstract class TestCase extends BaseTestCase
             'shipping' => [
                 'settings' => [
                     'free_shipping_threshold' => 100.00,
-                    'methods' => [
-                        'standard' => [
-                            'name' => 'Standard Shipping',
-                            'cost' => 5.99,
-                            'estimated_days' => '5-7',
-                            'type' => 'flat',
-                        ],
-                        'express' => [
-                            'name' => 'Express Shipping',
-                            'cost' => 15.99,
-                            'estimated_days' => '1-2',
-                            'type' => 'flat',
-                        ],
-                    ],
                 ],
             ],
             'discounts' => [

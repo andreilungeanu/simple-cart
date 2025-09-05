@@ -13,55 +13,56 @@ class ShippingCalculator
         private CartConfiguration $config
     ) {}
 
-    public function calculate(Cart $cart): float
+    public function calculate(Cart $cart, ?array $appliedDiscounts = null): float
     {
-        if (! $cart->shipping_method) {
+        $shippingData = $cart->shipping_data;
+
+        if (! $shippingData || ! isset($shippingData['cost'])) {
             return 0.0;
         }
 
-        $subtotal = $cart->subtotal;
-
-        // Free shipping threshold
-        if ($subtotal >= $this->config->freeShippingThreshold) {
-            return 0.0;
+        // Check for free shipping discounts first (higher priority)
+        $discounts = $appliedDiscounts ?? $cart->discount_data ?? [];
+        foreach ($discounts as $discount) {
+            if (($discount['type'] ?? '') === 'free_shipping') {
+                return 0.0;
+            }
         }
 
-        $method = $this->config->getShippingMethod($cart->shipping_method);
-        if (! $method) {
-            return 0.0;
+        // Then check threshold-based free shipping
+        if ($this->config->freeShippingThreshold !== null) {
+            $subtotal = $cart->subtotal;
+            if ($subtotal >= $this->config->freeShippingThreshold) {
+                return 0.0;
+            }
         }
 
-        return match ($method['type'] ?? 'flat') {
-            'weight' => $this->calculateWeightBased($cart, $method),
-            'percentage' => $subtotal * ($method['rate'] ?? 0),
-            'flat' => $method['cost'] ?? 0.0,
-            default => 0.0,
-        };
+        return (float) $shippingData['cost'];
     }
 
-    public function isFreeShippingApplied(Cart $cart): bool
+    public function isFreeShippingApplied(Cart $cart, ?array $appliedDiscounts = null): bool
     {
-        return $cart->shipping_method !== null &&
+        $shippingData = $cart->shipping_data;
+
+        if ($shippingData === null || ! isset($shippingData['cost'])) {
+            return false;
+        }
+
+        // Check for free shipping discounts first
+        $discounts = $appliedDiscounts ?? $cart->discount_data ?? [];
+        foreach ($discounts as $discount) {
+            if (($discount['type'] ?? '') === 'free_shipping') {
+                return true;
+            }
+        }
+
+        // Then check threshold-based free shipping
+        return $this->config->freeShippingThreshold !== null &&
                $cart->subtotal >= $this->config->freeShippingThreshold;
     }
 
-    public function getAvailableMethods(Cart $cart): array
+    public function getAppliedShipping(Cart $cart): ?array
     {
-        $methods = $this->config->getShippingMethods();
-
-        // Filter methods based on cart criteria (weight, destination, etc.)
-        return array_filter($methods, function ($method, $key) {
-            // Add filtering logic here if needed
-            return true;
-        }, ARRAY_FILTER_USE_BOTH);
-    }
-
-    private function calculateWeightBased(Cart $cart, array $method): float
-    {
-        $totalWeight = $cart->items->sum(function ($item) {
-            return ($item->metadata['weight'] ?? 0) * $item->quantity;
-        });
-
-        return $totalWeight * ($method['rate_per_kg'] ?? 0);
+        return $cart->shipping_data;
     }
 }

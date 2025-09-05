@@ -10,10 +10,7 @@ describe('CartConfiguration', function () {
         $configArray = [
             'storage' => ['ttl_days' => 45],
             'shipping' => [
-                'settings' => [
-                    'free_shipping_threshold' => 75.0,
-                    'methods' => ['standard' => ['cost' => 9.99]],
-                ],
+                'free_shipping_threshold' => 75.0,
             ],
             'tax' => [
                 'default_zone' => 'RO',
@@ -65,53 +62,6 @@ describe('CartConfiguration', function () {
         expect($usSettings['default_rate'])->toBe(0.0725)
             ->and($roSettings['default_rate'])->toBe(0.19)
             ->and($unknownSettings)->toBeNull();
-    });
-
-    it('gets shipping method settings', function () {
-        $configArray = [
-            'shipping' => [
-                'settings' => [
-                    'methods' => [
-                        'standard' => ['cost' => 5.99, 'name' => 'Standard'],
-                        'express' => ['cost' => 15.99, 'name' => 'Express'],
-                    ],
-                ],
-            ],
-        ];
-
-        $config = CartConfiguration::fromConfig($configArray);
-
-        $standardMethod = $config->getShippingMethod('standard');
-        $expressMethod = $config->getShippingMethod('express');
-        $unknownMethod = $config->getShippingMethod('unknown');
-
-        expect($standardMethod['cost'])->toBe(5.99)
-            ->and($standardMethod['name'])->toBe('Standard')
-            ->and($expressMethod['cost'])->toBe(15.99)
-            ->and($expressMethod['name'])->toBe('Express')
-            ->and($unknownMethod)->toBeNull();
-    });
-
-    it('gets all shipping methods', function () {
-        $configArray = [
-            'shipping' => [
-                'settings' => [
-                    'methods' => [
-                        'standard' => ['cost' => 5.99],
-                        'express' => ['cost' => 15.99],
-                    ],
-                ],
-            ],
-        ];
-
-        $config = CartConfiguration::fromConfig($configArray);
-
-        $methods = $config->getShippingMethods();
-
-        expect($methods)->toHaveKey('standard')
-            ->and($methods)->toHaveKey('express')
-            ->and($methods['standard']['cost'])->toBe(5.99)
-            ->and($methods['express']['cost'])->toBe(15.99);
     });
 
     it('is readonly', function () {

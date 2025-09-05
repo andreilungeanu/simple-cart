@@ -39,29 +39,8 @@ return [
     ],
 
     'shipping' => [
-        'settings' => [
-            'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
-            'methods' => [
-                'standard' => [
-                    'name' => 'Standard Shipping',
-                    'cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
-                    'estimated_days' => '5-7',
-                    'type' => 'flat',
-                ],
-                'express' => [
-                    'name' => 'Express Shipping',
-                    'cost' => env('CART_EXPRESS_SHIPPING_COST', 15.99),
-                    'estimated_days' => '1-2',
-                    'type' => 'flat',
-                ],
-                'overnight' => [
-                    'name' => 'Overnight Shipping',
-                    'cost' => env('CART_OVERNIGHT_SHIPPING_COST', 29.99),
-                    'estimated_days' => '1',
-                    'type' => 'flat',
-                ],
-            ],
-        ],
+        'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 0.00),
+        // Set to null or 0 to disable free shipping completely
     ],
 
     'discounts' => [

@@ -105,7 +105,16 @@ class CartService
 
     public function calculateShipping(Cart $cart): float
     {
-        return $this->shippingCalculator->calculate($cart);
+        $appliedDiscounts = $this->getAppliedDiscounts($cart);
+
+        return $this->shippingCalculator->calculate($cart, $appliedDiscounts);
+    }
+
+    public function isFreeShippingApplied(Cart $cart): bool
+    {
+        $appliedDiscounts = $this->getAppliedDiscounts($cart);
+
+        return $this->shippingCalculator->isFreeShippingApplied($cart, $appliedDiscounts);
     }
 
     public function calculateTax(Cart $cart): float
@@ -166,14 +175,31 @@ class CartService
         return $cart->discount_data ?? [];
     }
 
-    public function setShippingMethod(Cart $cart, string $method): void
+    public function applyShipping(Cart $cart, array $shippingData): void
     {
-        if (! $this->config->getShippingMethod($method)) {
-            throw new CartException("Invalid shipping method: {$method}");
+        // Validate required shipping data structure
+        if (! isset($shippingData['method_name'], $shippingData['cost'])) {
+            throw new CartException('Shipping data must include method_name and cost');
         }
 
-        $cart->update(['shipping_method' => $method]);
-        event(new CartUpdated($cart, 'shipping_method_updated', ['method' => $method]));
+        // Ensure cost is numeric
+        if (! is_numeric($shippingData['cost']) || $shippingData['cost'] < 0) {
+            throw new CartException('Shipping cost must be a non-negative number');
+        }
+
+        $cart->update(['shipping_data' => $shippingData]);
+        event(new CartUpdated($cart, 'shipping_applied', ['method' => $shippingData['method_name']]));
+    }
+
+    public function removeShipping(Cart $cart): void
+    {
+        $cart->update(['shipping_data' => null]);
+        event(new CartUpdated($cart, 'shipping_removed', []));
+    }
+
+    public function getAppliedShipping(Cart $cart): ?array
+    {
+        return $cart->shipping_data;
     }
 
     public function setTaxZone(Cart $cart, string $zone): void
@@ -191,7 +217,7 @@ class CartService
         $cart->items()->delete();
         $cart->update([
             'discount_data' => [],
-            'shipping_method' => null,
+            'shipping_data' => null,
         ]);
 
         event(new CartUpdated($cart, 'cleared'));

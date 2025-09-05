@@ -74,7 +74,13 @@ $discountData = [
 ];
 Cart::applyDiscount($cart, $discountData);
 
-Cart::setShippingMethod($cart, 'express');
+// Apply shipping
+Cart::applyShipping($cart, [
+    'method_name' => 'Express Shipping',
+    'cost' => 15.99,
+    'carrier' => 'UPS'
+]);
+
 Cart::setTaxZone($cart, 'US');
 
 echo "Final Total: " . Cart::calculateTotal($cart);
@@ -112,26 +118,136 @@ $total = Cart::calculateTotal($cart);
 // Note: VAT exemption functionality not yet implemented
 ```
 
-### Shipping Methods
+### Dynamic Shipping System
+
+The Simple Cart package uses a **dynamic shipping system** where your application provides complete shipping data instead of relying on pre-configured shipping methods. This gives you full control over shipping rates, carriers, and delivery options.
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\Cart;
 
-// Create cart and set shipping method
+// Create cart
 $cart = Cart::create(userId: 123);
 
-// Configure shipping with different methods
-Cart::setShippingMethod($cart, 'standard'); // $5.99
-Cart::setShippingMethod($cart, 'express');  // $15.99
+// Apply shipping with required data from your app (API, database, etc.)
+Cart::applyShipping($cart, [
+    'method_name' => 'Ground Shipping',
+    'cost' => 12.99,
+    // Optional: any additional data you want to store
+    'carrier' => 'Local Courier'
+]);
 
-$shipping = Cart::calculateShipping($cart);
+$shipping = Cart::calculateShipping($cart); // Returns 0.00 if free shipping threshold met
 
-// Free shipping is automatically applied when subtotal meets threshold (configured at $100 by default)
-$subtotal = Cart::calculateSubtotal($cart);
-if ($subtotal >= 100.00) {
-    echo "Free shipping applied!";
+// Check if free shipping was automatically applied
+if (Cart::isFreeShippingApplied($cart)) {
+    echo "Free shipping applied! (subtotal over threshold)";
+} else {
+    echo "Shipping cost: $" . $shipping;
 }
+
+// To disable free shipping completely, set threshold to null in config:
+// 'free_shipping_threshold' => null,  // Completely disable free shipping
+
+// Note: Free shipping can be disabled by setting the threshold to null or 0 in config:
+// 'free_shipping_threshold' => null,  // Completely disable free shipping
 ```
+
+#### Simple Shipping Integration
+
+```php
+// Example: Your application provides shipping options from any source
+$shippingOptions = [
+    [
+        'method_name' => 'Standard Shipping',
+        'cost' => 9.99
+    ],
+    [
+        'method_name' => 'Express Shipping', 
+        'cost' => 19.99
+    ]
+];
+
+// Let user select shipping option
+$selectedOption = $shippingOptions[1]; // User's choice
+
+// Apply selected shipping to cart
+Cart::applyShipping($cart, $selectedOption);
+```
+
+#### Shipping Management
+
+```php
+// Get currently applied shipping
+$appliedShipping = Cart::getAppliedShipping($cart);
+if ($appliedShipping) {
+    echo "Shipping: {$appliedShipping['method_name']} - \${$appliedShipping['cost']}";
+}
+
+// Remove shipping
+Cart::removeShipping($cart);
+
+// Apply different shipping (e.g., user changed selection)
+Cart::applyShipping($cart, [
+    'method_name' => 'Overnight Express',
+    'cost' => 29.99
+]);
+```
+
+#### Advanced Shipping Examples
+
+```php
+// Free shipping promotion
+Cart::applyShipping($cart, [
+    'method_name' => 'Free Standard Shipping',
+    'cost' => 0
+]);
+
+// Express shipping
+Cart::applyShipping($cart, [
+    'method_name' => 'Express Delivery',
+    'cost' => 25.99
+]);
+
+// Local pickup
+Cart::applyShipping($cart, [
+    'method_name' => 'Store Pickup',
+    'cost' => 0
+]);
+
+// Store any metadata your app needs - all gets saved to shipping_data
+Cart::applyShipping($cart, [
+    'method_name' => 'Premium Delivery',
+    'cost' => 75.00,
+    'carrier' => 'Premium Logistics',
+    'estimated_delivery' => '2-3 business days',
+    'tracking_available' => true,
+    'signature_required' => true,
+    'insurance_included' => true,
+    'notes' => 'White glove service with setup'
+]);
+
+// Later retrieve all stored shipping data
+$shippingData = Cart::getAppliedShipping($cart);
+// Returns complete array with all metadata:
+// [
+//     'method_name' => 'Premium Delivery',
+//     'cost' => 75.00,
+//     'carrier' => 'Premium Logistics', 
+//     'estimated_delivery' => '2-3 business days',
+//     'tracking_available' => true,
+//     'signature_required' => true,
+//     'insurance_included' => true,
+//     'notes' => 'White glove service with setup'
+// ]
+```
+
+**Shipping System Benefits:**
+- ✅ **Simple requirements** - only needs method name and cost  
+- ✅ **Complete flexibility** - any shipping method your app supports
+- ✅ **Dynamic pricing** - promotional rates, time-sensitive pricing
+- ✅ **Optional metadata** - store any additional data you need
+- ✅ **Free shipping logic** - automatic free shipping when threshold met
+- ✅ **No external dependencies** - works with your existing shipping logic
 
 ### Discount System
 
@@ -292,6 +408,22 @@ Cart::getAppliedDiscounts(Cart $cart): array
 Cart::calculateDiscounts(Cart $cart): float
 ```
 
+### Shipping API Methods
+
+```php
+// Apply shipping with complete data
+Cart::applyShipping(Cart $cart, array $shippingData): void
+
+// Remove shipping from cart
+Cart::removeShipping(Cart $cart): void
+
+// Get currently applied shipping data
+Cart::getAppliedShipping(Cart $cart): ?array
+
+// Calculate shipping cost for cart
+Cart::calculateShipping(Cart $cart): float
+```
+
 ### Cart Management
 
 ```php
@@ -410,23 +542,12 @@ return [
     ],
     
     'shipping' => [
-        'settings' => [
-            'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
-            'methods' => [
-                'standard' => [
-                    'name' => 'Standard Shipping',
-                    'cost' => env('CART_STANDARD_SHIPPING_COST', 5.99),
-                    'estimated_days' => '5-7',
-                    'type' => 'flat',
-                ],
-                'express' => [
-                    'name' => 'Express Shipping',
-                    'cost' => env('CART_EXPRESS_SHIPPING_COST', 15.99),
-                    'estimated_days' => '1-2',
-                    'type' => 'flat',
-                ],
-            ],
-        ],
+        'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
+        // Set to null or 0 to disable free shipping completely
+        // 'free_shipping_threshold' => null,
+        // Note: The package uses a dynamic shipping system where your application
+        // provides complete shipping data via Cart::applyShipping() method.
+        // This gives you full control over shipping rates, carriers, and delivery options.
     ],
     
     'discounts' => [
@@ -444,7 +565,7 @@ return [
 ### Run Tests
 
 ```bash
-# Full test suite (107 tests, ~6.0s)
+# Full test suite (121 tests, ~3.4s)
 composer test
 
 # Parallel execution for faster results  

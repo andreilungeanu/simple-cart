@@ -147,7 +147,10 @@ describe('DiscountCalculator', function () {
 
     it('handles free shipping discount type', function () {
         $cart = createTestCart(1);
-        $cart->update(['shipping_method' => 'standard']); // Set shipping method first
+        $cart->update(['shipping_data' => [
+            'method_name' => 'Standard Shipping',
+            'cost' => 5.99,
+        ]]); // Set shipping data first (new dynamic system)
 
         $discountData = [
             'FREESHIP' => [
@@ -171,7 +174,7 @@ describe('DiscountCalculator', function () {
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
-        expect($discount)->toBe(5.99); // Should return shipping cost as discount
+        expect($discount)->toBe(0.0); // DiscountCalculator returns 0.0, ShippingCalculator handles free shipping logic
     });
 
     it('handles category-based discounts', function () {

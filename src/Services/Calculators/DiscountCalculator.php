@@ -10,8 +10,7 @@ use AndreiLungeanu\SimpleCart\Models\Cart;
 class DiscountCalculator
 {
     public function __construct(
-        private CartConfiguration $config,
-        private ShippingCalculator $shippingCalculator
+        private CartConfiguration $config
     ) {}
 
     public function calculate(Cart $cart, float $subtotal): float
@@ -120,9 +119,9 @@ class DiscountCalculator
         $value = (float) ($discountData['value'] ?? 0.0);
         $conditions = $discountData['conditions'] ?? [];
 
-        // For free shipping, return the shipping cost as discount
+        // For free shipping, return 0.0 since ShippingCalculator handles the logic
         if ($type === 'free_shipping') {
-            return $this->shippingCalculator->calculate($cart);
+            return 0.0;
         }
 
         // Get target items based on conditions

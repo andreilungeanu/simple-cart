@@ -111,17 +111,20 @@ describe('CartUpdated Event', function () {
         });
     });
 
-    it('is dispatched when shipping method is set', function () {
+    it('is dispatched when shipping is applied', function () {
         Event::fake();
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->setShippingMethod($cart, 'express');
+        $cartService->applyShipping($cart, [
+            'method_name' => 'Express Shipping',
+            'cost' => 15.99,
+        ]);
 
         Event::assertDispatched(CartUpdated::class, function ($event) use ($cart) {
             return $event->cart->id === $cart->id
-                && $event->action === 'shipping_method_updated'
-                && $event->metadata['method'] === 'express';
+                && $event->action === 'shipping_applied'
+                && $event->metadata['method'] === 'Express Shipping';
         });
     });
 
