@@ -1,0 +1,233 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AndreiLungeanu\SimpleCart\Services;
+
+use AndreiLungeanu\SimpleCart\Data\CartConfiguration;
+use AndreiLungeanu\SimpleCart\Enums\CartStatusEnum;
+use AndreiLungeanu\SimpleCart\Events\CartUpdated;
+use AndreiLungeanu\SimpleCart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Models\Cart;
+use AndreiLungeanu\SimpleCart\Models\CartItem;
+use AndreiLungeanu\SimpleCart\Services\Calculators\ShippingCalculator;
+use AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator;
+
+class CartService
+{
+    public function __construct(
+        private CartConfiguration $config,
+        private TaxCalculator $taxCalculator,
+        private ShippingCalculator $shippingCalculator,
+    ) {}
+
+    public function create(?int $userId = null, ?string $sessionId = null): Cart
+    {
+        $cart = Cart::create([
+            'user_id' => $userId,
+            'session_id' => $sessionId ?? session()->getId(),
+            'status' => CartStatusEnum::Active,
+            'expires_at' => now()->addDays($this->config->ttlDays),
+        ]);
+
+        event(new CartUpdated($cart, 'created'));
+
+        return $cart;
+    }
+
+    public function find(string $cartId): ?Cart
+    {
+        return Cart::with('items')->find($cartId);
+    }
+
+    public function findOrFail(string $cartId): Cart
+    {
+        $cart = $this->find($cartId);
+
+        if (! $cart) {
+            throw new CartException("Cart with ID {$cartId} not found");
+        }
+
+        return $cart;
+    }
+
+    public function addItem(Cart $cart, array $itemData): CartItem
+    {
+        $this->validateItemData($itemData);
+
+        /** @var CartItem $item */
+        $item = $cart->items()->updateOrCreate(
+            ['product_id' => $itemData['product_id']],
+            [
+                'name' => $itemData['name'],
+                'price' => $itemData['price'],
+                'quantity' => ($cart->items()->where('product_id', $itemData['product_id'])->first()->quantity ?? 0) + ($itemData['quantity'] ?? 1),
+                'category' => $itemData['category'] ?? null,
+                'metadata' => $itemData['metadata'] ?? [],
+            ]
+        );
+
+        event(new CartUpdated($cart->fresh(['items']), 'item_added', ['item' => $item]));
+
+        return $item;
+    }
+
+    public function updateQuantity(Cart $cart, string $productId, int $quantity): void
+    {
+        if ($quantity <= 0) {
+            $this->removeItem($cart, $productId);
+
+            return;
+        }
+
+        $updated = $cart->items()->where('product_id', $productId)->update(['quantity' => $quantity]);
+
+        if ($updated) {
+            event(new CartUpdated($cart->fresh(['items']), 'item_updated', ['product_id' => $productId]));
+        }
+    }
+
+    public function removeItem(Cart $cart, string $productId): void
+    {
+        $deleted = $cart->items()->where('product_id', $productId)->delete();
+
+        if ($deleted) {
+            event(new CartUpdated($cart->fresh(['items']), 'item_removed', ['product_id' => $productId]));
+        }
+    }
+
+    public function calculateSubtotal(Cart $cart): float
+    {
+        return $cart->subtotal;
+    }
+
+    public function calculateShipping(Cart $cart): float
+    {
+        return $this->shippingCalculator->calculate($cart);
+    }
+
+    public function calculateTax(Cart $cart): float
+    {
+        $subtotal = $this->calculateSubtotal($cart);
+        $shipping = $this->calculateShipping($cart);
+
+        return $this->taxCalculator->calculate($cart, $subtotal, $shipping);
+    }
+
+    public function calculateTotal(Cart $cart): float
+    {
+        $subtotal = $this->calculateSubtotal($cart);
+        $shipping = $this->calculateShipping($cart);
+        $tax = $this->calculateTax($cart);
+        $discounts = $this->calculateDiscounts($cart);
+
+        return round($subtotal + $shipping + $tax - $discounts, 2);
+    }
+
+    public function applyDiscountCode(Cart $cart, string $code): void
+    {
+        $discountCodes = $cart->discount_codes ?? [];
+
+        if (! in_array($code, $discountCodes)) {
+            if (count($discountCodes) >= $this->config->maxDiscountCodes) {
+                throw new CartException("Cannot apply more than {$this->config->maxDiscountCodes} discount codes");
+            }
+
+            $discountCodes[] = $code;
+            $cart->update(['discount_codes' => $discountCodes]);
+            event(new CartUpdated($cart, 'discount_applied', ['code' => $code]));
+        }
+    }
+
+    public function removeDiscountCode(Cart $cart, string $code): void
+    {
+        $discountCodes = $cart->discount_codes ?? [];
+        $key = array_search($code, $discountCodes);
+
+        if ($key !== false) {
+            unset($discountCodes[$key]);
+            $cart->update(['discount_codes' => array_values($discountCodes)]);
+            event(new CartUpdated($cart, 'discount_removed', ['code' => $code]));
+        }
+    }
+
+    public function setShippingMethod(Cart $cart, string $method): void
+    {
+        if (! $this->config->getShippingMethod($method)) {
+            throw new CartException("Invalid shipping method: {$method}");
+        }
+
+        $cart->update(['shipping_method' => $method]);
+        event(new CartUpdated($cart, 'shipping_method_updated', ['method' => $method]));
+    }
+
+    public function setTaxZone(Cart $cart, string $zone): void
+    {
+        if (! $this->config->getTaxSettings($zone)) {
+            throw new CartException("Invalid tax zone: {$zone}");
+        }
+
+        $cart->update(['tax_zone' => $zone]);
+        event(new CartUpdated($cart, 'tax_zone_updated', ['zone' => $zone]));
+    }
+
+    public function clear(Cart $cart): void
+    {
+        $cart->items()->delete();
+        $cart->update([
+            'discount_codes' => [],
+            'shipping_method' => null,
+        ]);
+
+        event(new CartUpdated($cart, 'cleared'));
+    }
+
+    public function delete(Cart $cart): void
+    {
+        $cartId = $cart->id;
+        $cart->delete();
+
+        event(new CartUpdated($cart, 'deleted', ['cart_id' => $cartId]));
+    }
+
+    public function getCartSummary(Cart $cart): array
+    {
+        return [
+            'id' => $cart->id,
+            'item_count' => $cart->item_count,
+            'subtotal' => $this->calculateSubtotal($cart),
+            'shipping' => $this->calculateShipping($cart),
+            'tax' => $this->calculateTax($cart),
+            'discounts' => $this->calculateDiscounts($cart),
+            'total' => $this->calculateTotal($cart),
+            'status' => $cart->status->value,
+            'expires_at' => $cart->expires_at?->toISOString(),
+        ];
+    }
+
+    private function calculateDiscounts(Cart $cart): float
+    {
+        // Placeholder for discount calculation logic
+        // This would implement the actual discount code processing
+        return 0.0;
+    }
+
+    private function validateItemData(array $itemData): void
+    {
+        $required = ['product_id', 'name', 'price'];
+
+        foreach ($required as $field) {
+            if (! isset($itemData[$field])) {
+                throw new CartException("Missing required field: {$field}");
+            }
+        }
+
+        if ($itemData['price'] < 0) {
+            throw new CartException('Price cannot be negative');
+        }
+
+        if (isset($itemData['quantity']) && $itemData['quantity'] < 1) {
+            throw new CartException('Quantity must be at least 1');
+        }
+    }
+}
