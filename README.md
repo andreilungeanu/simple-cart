@@ -7,13 +7,13 @@
 
 **Modern Laravel shopping cart package with clean architecture**
 
-## 🎯 Features
+> **Note**: This package uses a **service-based API** accessed through the `Cart` facade. All cart operations require passing the cart instance as the first parameter.
 
-- ✅ **Minimal Codebase** - Only essential files with clear separation of concerns
+## 🎯 Features
 - ✅ **Event-Driven Design** - Comprehensive listeners for cart lifecycle events
-- ✅ **Advanced Calculations** - Multi-zone tax, flexible shipping, percentage/fixed discounts
+- ✅ **Advanced Calculations** - Multi-zone tax, flexible shipping, comprehensive discount system
 - ✅ **Multiple Cart Instances** - Proper user/session isolation and state management
-- ✅ **Fluent Interface** - Chainable API for intuitive cart manipulation
+- ✅ **Service-Based API** - Clean service layer for cart operations
 - ✅ **Database Persistence** - Reliable storage with automatic expiration handling
 
 
@@ -38,39 +38,46 @@ php artisan vendor:publish --tag="simple-cart-config"
 ## 🚀 Quick Start
 
 ```php
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\Facades\CartOperations;
+use AndreiLungeanu\SimpleCart\Facades\Cart;
 
-// Create cart and add items with method chaining
-$cart = SimpleCart::create(userId: 'user-123', taxZone: 'US')
-    ->addItem([
-        'id' => 'prod_1',
-        'name' => 'Laptop Pro',
-        'price' => 1299.99,
-        'quantity' => 1
-    ])
-    ->addItem([
-        'id' => 'prod_2', 
-        'name' => 'Wireless Mouse',
-        'price' => 25.50,
-        'quantity' => 2
-    ]);
+// Create cart and add items
+$cart = Cart::create(userId: 123);
 
-// Get calculations using stateless operations
-$cartId = $cart->getId();
-$subtotal = CartOperations::getSubtotal($cartId);  // 1350.99
-$total = CartOperations::getTotal($cartId);        // Includes tax, shipping, etc.
-$itemCount = CartOperations::getItemCount($cartId); // 3
+// Add items to cart
+Cart::addItem($cart, [
+    'product_id' => 'prod_1',
+    'name' => 'Laptop Pro', 
+    'price' => 1299.99,
+    'quantity' => 1
+]);
 
-// Apply discounts and shipping
-$cart->applyDiscount([
-        'code' => 'SAVE10',
-        'type' => 'percentage', 
-        'value' => 10.0
-    ])
-    ->setShippingMethod('express');
+Cart::addItem($cart, [
+    'product_id' => 'prod_2',
+    'name' => 'Wireless Mouse',
+    'price' => 25.50,
+    'quantity' => 2
+]);
 
-echo "Final Total: " . CartOperations::getTotal($cartId);
+// Get calculations
+$subtotal = Cart::calculateSubtotal($cart);  // 1350.99
+$shipping = Cart::calculateShipping($cart);
+$tax = Cart::calculateTax($cart);
+$discounts = Cart::calculateDiscounts($cart); // Applied discount amount
+$total = Cart::calculateTotal($cart);        // Includes tax, shipping, discounts, etc.
+
+// Apply discounts with dynamic data
+$discountData = [
+    'code' => 'SAVE50',
+    'type' => 'fixed',
+    'value' => 50,
+    'conditions' => ['minimum_amount' => 100]
+];
+Cart::applyDiscount($cart, $discountData);
+
+Cart::setShippingMethod($cart, 'express');
+Cart::setTaxZone($cart, 'US');
+
+echo "Final Total: " . Cart::calculateTotal($cart);
 ```
 
 ## 🛠️ Advanced Usage
@@ -78,105 +85,245 @@ echo "Final Total: " . CartOperations::getTotal($cartId);
 ### Tax Zone Configuration
 
 ```php
-use AndreiLungeanu\SimpleCart\Cart\Facades\SimpleCart;
-use AndreiLungeanu\SimpleCart\Cart\Facades\CartOperations;
+use AndreiLungeanu\SimpleCart\Facades\Cart;
 
 // Create cart with Romanian tax zone (19% VAT, 5% for books)
-$cart = SimpleCart::create(taxZone: 'RO')
-    ->addItem([
-        'id' => 'book_123',
-        'name' => 'Laravel Guide',
-        'price' => 45.00,
-        'quantity' => 1,
-        'category' => 'books' // 5% VAT rate
-    ])
-    ->addItem([
-        'id' => 'laptop_456',
-        'name' => '15" Laptop',
-        'price' => 899.99,
-        'quantity' => 1 // Default 19% VAT rate
-    ]);
+$cart = Cart::create(userId: 123);
+Cart::setTaxZone($cart, 'RO');
 
-$tax = CartOperations::getTaxAmount($cart->getId()); // Calculated per category
-$total = CartOperations::getTotal($cart->getId());
+Cart::addItem($cart, [
+    'product_id' => 'book_123',
+    'name' => 'Laravel Guide',
+    'price' => 45.00,
+    'quantity' => 1,
+    'category' => 'books' // 5% VAT rate
+]);
 
-// VAT exemption for business customers
-$cart->setVatExempt(true);
-$taxExempt = CartOperations::getTaxAmount($cart->getId()); // 0.00
+Cart::addItem($cart, [
+    'product_id' => 'laptop_456',
+    'name' => '15" Laptop',
+    'price' => 899.99,
+    'quantity' => 1 // Default 19% VAT rate
+]);
+
+$tax = Cart::calculateTax($cart); // Calculated per category
+$total = Cart::calculateTotal($cart);
+
+// Note: VAT exemption functionality not yet implemented
 ```
 
 ### Shipping Methods
 
 ```php
+use AndreiLungeanu\SimpleCart\Facades\Cart;
+
+// Create cart and set shipping method
+$cart = Cart::create(userId: 123);
+
 // Configure shipping with different methods
-$cart->setShippingMethod('standard'); // €5.99
-$cart->setShippingMethod('express');  // €15.99
+Cart::setShippingMethod($cart, 'standard'); // $5.99
+Cart::setShippingMethod($cart, 'express');  // $15.99
 
-// Custom shipping configuration
-$cart->setShippingMethod('express', [
-    'vat_included' => false,
-    'custom_rate' => 0.21
-]);
+$shipping = Cart::calculateShipping($cart);
 
-$shipping = CartOperations::getShippingAmount($cart->getId());
-
-// Free shipping threshold (configured at €100 by default)
-if (CartOperations::isFreeShippingApplied($cart->getId())) {
+// Free shipping is automatically applied when subtotal meets threshold (configured at $100 by default)
+$subtotal = Cart::calculateSubtotal($cart);
+if ($subtotal >= 100.00) {
     echo "Free shipping applied!";
 }
 ```
 
 ### Discount System
 
+The Simple Cart package uses a **dynamic discount system** where your application provides complete discount data instead of relying on pre-configured discount codes. This gives you full control over discount logic, validation, and conditions.
+
 ```php
-use AndreiLungeanu\SimpleCart\Cart\Enums\DiscountType;
-use AndreiLungeanu\SimpleCart\Cart\DTOs\DiscountDTO;
+use AndreiLungeanu\SimpleCart\Facades\Cart;
 
-// Multiple discount types
-$cart->applyDiscount([
-        'code' => 'FIXED10', 
-        'type' => 'fixed',
-        'value' => 10.00
-    ])
-    ->applyDiscount(new DiscountDTO(
-        code: 'PERCENT15',
-        type: DiscountType::Percentage,
-        value: 15.0
-    ));
+// Create cart and add items
+$cart = Cart::create(userId: 123);
+Cart::addItem($cart, [
+    'product_id' => 'prod_1',
+    'name' => 'Gaming Laptop',
+    'price' => 1200.00,
+    'quantity' => 1,
+    'category' => 'electronics'
+]);
 
-$discountAmount = CartOperations::getDiscountAmount($cart->getId());
-$finalTotal = CartOperations::getTotal($cart->getId());
+Cart::addItem($cart, [
+    'product_id' => 'prod_2',
+    'name' => 'Programming Book',
+    'price' => 45.00,
+    'quantity' => 2,
+    'category' => 'books'
+]);
+
+// Apply discounts by providing complete discount data
+$discountData = [
+    'code' => 'SAVE10',
+    'type' => 'fixed',
+    'value' => 10,
+    'conditions' => [
+        'minimum_amount' => 50
+    ]
+];
+Cart::applyDiscount($cart, $discountData);
+
+// Apply percentage discount with category condition
+$categoryDiscount = [
+    'code' => 'ELECTRONICS20',
+    'type' => 'percentage',
+    'value' => 20,
+    'conditions' => [
+        'category' => 'electronics',
+        'minimum_amount' => 1000
+    ]
+];
+Cart::applyDiscount($cart, $categoryDiscount);
+
+// Apply free shipping discount
+$freeShippingDiscount = [
+    'code' => 'FREESHIP',
+    'type' => 'free_shipping',
+    'value' => 0,
+    'conditions' => [
+        'minimum_amount' => 100
+    ]
+];
+Cart::applyDiscount($cart, $freeShippingDiscount);
+
+// Calculate totals with discounts applied
+$subtotal = Cart::calculateSubtotal($cart);   // 1290.00
+$discounts = Cart::calculateDiscounts($cart); // Calculated discount amount
+$total = Cart::calculateTotal($cart);         // Final total with all discounts
 
 // Remove specific discount
-$cart->removeDiscount('FIXED10');
+Cart::removeDiscount($cart, 'SAVE10');
+
+// Get all applied discounts
+$appliedDiscounts = Cart::getAppliedDiscounts($cart);
+foreach ($appliedDiscounts as $code => $discountData) {
+    echo "Discount {$code}: {$discountData['type']} - {$discountData['value']}\n";
+}
 ```
 
-### Extra Costs & Fees
+### Advanced Discount Conditions
+
+The package supports sophisticated discount conditions:
 
 ```php
-use AndreiLungeanu\SimpleCart\Cart\DTOs\ExtraCostDTO;
+// Item-specific discount (targets specific product)
+$itemDiscount = [
+    'code' => 'LAPTOP50',
+    'type' => 'fixed',
+    'value' => 50,
+    'conditions' => [
+        'item_id' => 'prod_1',          // Apply only to this product
+        'min_quantity' => 1             // Minimum quantity required
+    ]
+];
 
-// Add various extra costs
-$cart->addExtraCost([
-        'name' => 'Gift Wrapping',
-        'amount' => 4.99,
-        'type' => 'fixed'
-    ])
-    ->addExtraCost(new ExtraCostDTO(
-        name: 'Insurance',
-        amount: 2.5, // 2.5% of subtotal
-        type: 'percentage'
-    ))
-    ->addExtraCost([
-        'name' => 'Express Processing',
-        'amount' => 12.00,
-        'type' => 'fixed',
-        'vatRate' => 0.19,
-        'vatIncluded' => true
-    ]);
+// Category-based discount with quantity requirement
+$categoryDiscount = [
+    'code' => 'BOOKS15',
+    'type' => 'percentage',
+    'value' => 15,
+    'conditions' => [
+        'category' => 'books',          // Apply only to books category
+        'min_quantity' => 3,            // Need at least 3 books
+        'minimum_amount' => 75          // Minimum cart value
+    ]
+];
 
-$extraCosts = CartOperations::getExtraCostsTotal($cart->getId());
-$grandTotal = CartOperations::getTotal($cart->getId());
+// Cart-wide discount with multiple conditions
+$cartDiscount = [
+    'code' => 'BULK25',
+    'type' => 'percentage',
+    'value' => 25,
+    'conditions' => [
+        'min_items' => 5,               // Minimum total items in cart
+        'minimum_amount' => 200         // Minimum cart subtotal
+    ]
+];
+
+Cart::applyDiscount($cart, $itemDiscount);
+Cart::applyDiscount($cart, $categoryDiscount);
+Cart::applyDiscount($cart, $cartDiscount);
+```
+
+**Supported Discount Types:**
+- **Fixed Amount**: `$10 off`, `$50 off` - removes fixed dollar amount
+- **Percentage**: `15% off`, `20% off` - percentage-based discount  
+- **Free Shipping**: Eliminates shipping costs regardless of cart total
+
+**Available Conditions:**
+- **`minimum_amount`**: Minimum cart subtotal required
+- **`min_items`**: Minimum total quantity of items in cart
+- **`min_quantity`**: Minimum quantity for category/item-specific discounts
+- **`category`**: Apply discount only to items in specific category
+- **`item_id`**: Apply discount only to specific product ID
+
+**Discount Priority Rules:**
+1. **Item-specific discounts** (highest priority) - target individual products
+2. **Category-specific discounts** (medium priority) - target product categories
+3. **Cart-wide discounts** (lowest priority) - apply to entire cart
+
+**Discount Rules:**
+- ✅ **Dynamic discount data** - Your app provides complete discount information
+- ✅ **Sophisticated conditions** - Category, item, quantity, and amount validation
+- ✅ **Priority-based application** - Item → Category → Cart-wide precedence
+- ✅ **Safety caps** - Discounts cannot exceed applicable item totals
+- ✅ **Free shipping integration** - Returns actual shipping cost as discount amount
+- ✅ **Stacking support** - Multiple discounts can be applied (configurable)
+
+### Discount API Methods
+
+```php
+// Apply a discount with complete data
+Cart::applyDiscount(Cart $cart, array $discountData): void
+
+// Remove a discount by code
+Cart::removeDiscount(Cart $cart, string $code): void
+
+// Get all currently applied discounts
+Cart::getAppliedDiscounts(Cart $cart): array
+
+// Calculate total discount amount for cart
+Cart::calculateDiscounts(Cart $cart): float
+```
+
+### Cart Management
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\Cart;
+
+// Create and manage carts
+$cart = Cart::create(userId: 123, sessionId: 'optional-session-id');
+
+// Add items
+Cart::addItem($cart, [
+    'product_id' => 'prod_1',
+    'name' => 'Test Product',
+    'price' => 29.99,
+    'quantity' => 2,
+    'category' => 'electronics',
+    'metadata' => ['color' => 'blue']
+]);
+
+// Update item quantities
+Cart::updateQuantity($cart, 'prod_1', 5);
+
+// Remove items
+Cart::removeItem($cart, 'prod_1');
+
+// Get cart summary
+$summary = Cart::getCartSummary($cart);
+
+// Clear all items
+Cart::clear($cart);
+
+// Delete cart
+Cart::delete($cart);
 ```
 
 ## 🎯 Events
@@ -285,6 +432,10 @@ return [
     'discounts' => [
         'allow_stacking' => env('CART_ALLOW_DISCOUNT_STACKING', false),
         'max_discount_codes' => env('CART_MAX_DISCOUNT_CODES', 3),
+        // Note: Discount codes are no longer configured here.
+        // The package now uses a dynamic discount system where your application
+        // provides complete discount data via Cart::applyDiscount() method.
+        // This gives you full control over discount logic, validation, and conditions.
     ],
 ];
 ```
@@ -293,7 +444,7 @@ return [
 ### Run Tests
 
 ```bash
-# Full test suite (99 tests, ~4.7s)
+# Full test suite (107 tests, ~6.0s)
 composer test
 
 # Parallel execution for faster results  

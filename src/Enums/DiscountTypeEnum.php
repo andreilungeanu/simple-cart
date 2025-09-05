@@ -9,7 +9,6 @@ enum DiscountTypeEnum: string
     case Fixed = 'fixed';
     case Percentage = 'percentage';
     case FreeShipping = 'free_shipping';
-    case BuyXGetY = 'buy_x_get_y';
 
     public function label(): string
     {
@@ -17,7 +16,6 @@ enum DiscountTypeEnum: string
             self::Fixed => 'Fixed Amount',
             self::Percentage => 'Percentage Off',
             self::FreeShipping => 'Free Shipping',
-            self::BuyXGetY => 'Buy X Get Y',
         };
     }
 

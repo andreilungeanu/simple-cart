@@ -73,7 +73,14 @@ describe('CartUpdated Event', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->applyDiscountCode($cart, 'SAVE20');
+        $discountData = [
+            'code' => 'SAVE20',
+            'type' => 'percentage',
+            'value' => 20,
+            'conditions' => [],
+        ];
+
+        $cartService->applyDiscount($cart, $discountData);
 
         Event::assertDispatched(CartUpdated::class, function ($event) use ($cart) {
             return $event->cart->id === $cart->id
@@ -86,9 +93,16 @@ describe('CartUpdated Event', function () {
         Event::fake();
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
-        $cartService->applyDiscountCode($cart, 'SAVE20');
 
-        $cartService->removeDiscountCode($cart, 'SAVE20');
+        $discountData = [
+            'code' => 'SAVE20',
+            'type' => 'percentage',
+            'value' => 20,
+            'conditions' => [],
+        ];
+
+        $cartService->applyDiscount($cart, $discountData);
+        $cartService->removeDiscount($cart, 'SAVE20');
 
         Event::assertDispatched(CartUpdated::class, function ($event) use ($cart) {
             return $event->cart->id === $cart->id

@@ -10,6 +10,7 @@ use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
 use AndreiLungeanu\SimpleCart\Models\Cart;
 use AndreiLungeanu\SimpleCart\Models\CartItem;
+use AndreiLungeanu\SimpleCart\Services\Calculators\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator;
 
@@ -19,6 +20,7 @@ class CartService
         private CartConfiguration $config,
         private TaxCalculator $taxCalculator,
         private ShippingCalculator $shippingCalculator,
+        private DiscountCalculator $discountCalculator,
     ) {}
 
     public function create(?int $userId = null, ?string $sessionId = null): Cart
@@ -124,31 +126,44 @@ class CartService
         return round($subtotal + $shipping + $tax - $discounts, 2);
     }
 
-    public function applyDiscountCode(Cart $cart, string $code): void
+    public function applyDiscount(Cart $cart, array $discountData): void
     {
-        $discountCodes = $cart->discount_codes ?? [];
+        // Validate required discount data structure
+        if (! isset($discountData['code'], $discountData['type'], $discountData['value'])) {
+            throw new CartException('Discount data must include code, type, and value');
+        }
 
-        if (! in_array($code, $discountCodes)) {
-            if (count($discountCodes) >= $this->config->maxDiscountCodes) {
-                throw new CartException("Cannot apply more than {$this->config->maxDiscountCodes} discount codes");
-            }
+        $discounts = $cart->discount_data ?? [];
 
-            $discountCodes[] = $code;
-            $cart->update(['discount_codes' => $discountCodes]);
-            event(new CartUpdated($cart, 'discount_applied', ['code' => $code]));
+        if (isset($discounts[$discountData['code']])) {
+            return; // Discount already applied
+        }
+
+        if (count($discounts) >= $this->config->maxDiscountCodes) {
+            throw new CartException("Cannot apply more than {$this->config->maxDiscountCodes} discount codes");
+        }
+
+        // Store the full discount data indexed by code
+        $discounts[$discountData['code']] = $discountData;
+        $cart->update(['discount_data' => $discounts]);
+
+        event(new CartUpdated($cart, 'discount_applied', ['code' => $discountData['code']]));
+    }
+
+    public function removeDiscount(Cart $cart, string $code): void
+    {
+        $discounts = $cart->discount_data ?? [];
+
+        if (isset($discounts[$code])) {
+            unset($discounts[$code]);
+            $cart->update(['discount_data' => $discounts]);
+            event(new CartUpdated($cart, 'discount_removed', ['code' => $code]));
         }
     }
 
-    public function removeDiscountCode(Cart $cart, string $code): void
+    public function getAppliedDiscounts(Cart $cart): array
     {
-        $discountCodes = $cart->discount_codes ?? [];
-        $key = array_search($code, $discountCodes);
-
-        if ($key !== false) {
-            unset($discountCodes[$key]);
-            $cart->update(['discount_codes' => array_values($discountCodes)]);
-            event(new CartUpdated($cart, 'discount_removed', ['code' => $code]));
-        }
+        return $cart->discount_data ?? [];
     }
 
     public function setShippingMethod(Cart $cart, string $method): void
@@ -175,7 +190,7 @@ class CartService
     {
         $cart->items()->delete();
         $cart->update([
-            'discount_codes' => [],
+            'discount_data' => [],
             'shipping_method' => null,
         ]);
 
@@ -207,9 +222,9 @@ class CartService
 
     private function calculateDiscounts(Cart $cart): float
     {
-        // Placeholder for discount calculation logic
-        // This would implement the actual discount code processing
-        return 0.0;
+        $subtotal = $this->calculateSubtotal($cart);
+
+        return $this->discountCalculator->calculate($cart, $subtotal);
     }
 
     private function validateItemData(array $itemData): void

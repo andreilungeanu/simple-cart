@@ -6,6 +6,7 @@ namespace AndreiLungeanu\SimpleCart;
 
 use AndreiLungeanu\SimpleCart\Console\Commands\PurgeCartsCommand;
 use AndreiLungeanu\SimpleCart\Data\CartConfiguration;
+use AndreiLungeanu\SimpleCart\Services\Calculators\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator;
 use AndreiLungeanu\SimpleCart\Services\CartService;
@@ -34,9 +35,10 @@ class SimpleCartServiceProvider extends PackageServiceProvider
         $this->app->singleton(CartConfiguration::class, fn () => CartConfiguration::fromConfig(config('simple-cart', []))
         );
 
-        // Register Services
+        // Register Services with auto-resolution
         $this->app->singleton(CartService::class);
-        $this->app->singleton(TaxCalculator::class);
+        $this->app->singleton(DiscountCalculator::class);
         $this->app->singleton(ShippingCalculator::class);
+        $this->app->singleton(TaxCalculator::class);
     }
 }

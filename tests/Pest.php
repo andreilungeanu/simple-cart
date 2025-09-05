@@ -119,3 +119,86 @@ function createAbandonedCart(int $userId = 1): Cart
         'expires_at' => now()->addDays(30),
     ]);
 }
+
+function createCartWithDiscounts(int $userId = 1, array $discounts = []): Cart
+{
+    $cart = createTestCart($userId);
+
+    if (! empty($discounts)) {
+        $discountData = [];
+        foreach ($discounts as $discount) {
+            if (is_string($discount)) {
+                // Convert old string format to new data format
+                $discountData[$discount] = createTestDiscountData($discount);
+            } else {
+                // Already in new format
+                $discountData[$discount['code']] = $discount;
+            }
+        }
+        $cart->update(['discount_data' => $discountData]);
+    }
+
+    return $cart->refresh();
+}
+
+function createTestDiscountData(string $code): array
+{
+    $defaultDiscounts = createDiscountConfig();
+
+    return $defaultDiscounts[$code] ?? [
+        'code' => $code,
+        'type' => 'fixed',
+        'value' => 10.0,
+        'conditions' => ['minimum_amount' => 50.0],
+    ];
+}
+
+function createDiscountConfig(array $discounts = []): array
+{
+    $defaultDiscounts = [
+        'SAVE10' => [
+            'code' => 'SAVE10',
+            'type' => 'fixed',
+            'value' => 10.0,
+            'conditions' => ['minimum_amount' => 50.0],
+        ],
+        'SAVE20' => [
+            'code' => 'SAVE20',
+            'type' => 'fixed',
+            'value' => 20.0,
+            'conditions' => ['minimum_amount' => 100.0],
+        ],
+        'PERCENT15' => [
+            'code' => 'PERCENT15',
+            'type' => 'percentage',
+            'value' => 15.0,
+            'conditions' => ['minimum_amount' => 75.0],
+        ],
+        'FREESHIP' => [
+            'code' => 'FREESHIP',
+            'type' => 'free_shipping',
+            'value' => 0.0,
+            'conditions' => [],
+        ],
+        'BOOKS20' => [
+            'code' => 'BOOKS20',
+            'type' => 'percentage',
+            'value' => 20.0,
+            'conditions' => [
+                'category' => 'books',
+                'minimum_amount' => 30.0,
+            ],
+        ],
+        'LAPTOP_BULK' => [
+            'code' => 'LAPTOP_BULK',
+            'type' => 'fixed',
+            'value' => 50.0,
+            'conditions' => [
+                'item_id' => 'laptop_pro',
+                'min_quantity' => 2,
+            ],
+        ],
+    ];
+
+    return array_merge($defaultDiscounts, $discounts);
+}

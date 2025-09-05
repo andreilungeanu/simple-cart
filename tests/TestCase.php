@@ -91,6 +91,28 @@ abstract class TestCase extends BaseTestCase
             'discounts' => [
                 'allow_stacking' => false,
                 'max_discount_codes' => 3,
+                'codes' => [
+                    'SAVE10' => [
+                        'type' => 'fixed',
+                        'value' => 10.0,
+                        'minimum_amount' => 50.0,
+                    ],
+                    'SAVE20' => [
+                        'type' => 'fixed',
+                        'value' => 20.0,
+                        'minimum_amount' => 100.0,
+                    ],
+                    'PERCENT15' => [
+                        'type' => 'percentage',
+                        'value' => 15.0,
+                        'minimum_amount' => 75.0,
+                    ],
+                    'FREESHIP' => [
+                        'type' => 'free_shipping',
+                        'value' => 0.0,
+                        'minimum_amount' => 50.0,
+                    ],
+                ],
             ],
         ]);
     }

@@ -17,7 +17,7 @@ describe('Cart Model', function () {
             ->and($fillable)->toContain('session_id')
             ->and($fillable)->toContain('tax_zone')
             ->and($fillable)->toContain('shipping_method')
-            ->and($fillable)->toContain('discount_codes')
+            ->and($fillable)->toContain('discount_data')
             ->and($fillable)->toContain('metadata')
             ->and($fillable)->toContain('status')
             ->and($fillable)->toContain('expires_at');
@@ -25,12 +25,12 @@ describe('Cart Model', function () {
 
     it('casts attributes correctly', function () {
         $cart = new Cart([
-            'discount_codes' => ['CODE1', 'CODE2'],
+            'discount_data' => ['SAVE10' => ['code' => 'SAVE10', 'type' => 'fixed', 'value' => 10]],
             'metadata' => ['key' => 'value'],
             'status' => 'active',
         ]);
 
-        expect($cart->discount_codes)->toBeArray()
+        expect($cart->discount_data)->toBeArray()
             ->and($cart->metadata)->toBeArray()
             ->and($cart->status)->toBeInstanceOf(CartStatusEnum::class);
     });

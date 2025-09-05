@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $session_id
  * @property string|null $tax_zone
  * @property string|null $shipping_method
- * @property array $discount_codes
+ * @property array $discount_data
  * @property array $metadata
  * @property CartStatusEnum $status
  * @property \Carbon\Carbon|null $expires_at
@@ -37,7 +37,7 @@ class Cart extends Model
         'session_id',
         'tax_zone',
         'shipping_method',
-        'discount_codes',
+        'discount_data',
         'metadata',
         'status',
         'expires_at',
@@ -46,7 +46,7 @@ class Cart extends Model
     protected function casts(): array
     {
         return [
-            'discount_codes' => 'array',
+            'discount_data' => 'array',
             'metadata' => 'array',
             'status' => CartStatusEnum::class,
             'expires_at' => 'datetime',

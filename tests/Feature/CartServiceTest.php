@@ -183,7 +183,7 @@ describe('CartService - Item Management', function () {
 
         $cart->refresh();
         expect($cart->items->count())->toBe(0)
-            ->and($cart->discount_codes)->toBe([])
+            ->and($cart->discount_data)->toBe([])
             ->and($cart->shipping_method)->toBeNull();
     });
 
@@ -267,15 +267,24 @@ describe('CartService - Calculations', function () {
 
 describe('CartService - Discounts & Settings', function () {
 
-    it('can apply discount code', function () {
+    it('can apply discount', function () {
         Event::fake();
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->applyDiscountCode($cart, 'SAVE20');
+        $discountData = [
+            'code' => 'SAVE20',
+            'type' => 'percentage',
+            'value' => 20,
+            'conditions' => [],
+        ];
+
+        $cartService->applyDiscount($cart, $discountData);
 
         $cart->refresh();
-        expect($cart->discount_codes)->toContain('SAVE20');
+        expect($cart->discount_data)->toHaveKey('SAVE20');
+        expect($cart->discount_data['SAVE20']['type'])->toBe('percentage');
+        expect($cart->discount_data['SAVE20']['value'])->toBe(20);
 
         Event::assertDispatched(CartUpdated::class, function ($event) {
             return $event->action === 'discount_applied';
@@ -286,22 +295,37 @@ describe('CartService - Discounts & Settings', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->applyDiscountCode($cart, 'SAVE20');
-        $cartService->applyDiscountCode($cart, 'SAVE20'); // Apply again
+        $discountData = [
+            'code' => 'SAVE20',
+            'type' => 'percentage',
+            'value' => 20,
+            'conditions' => [],
+        ];
+
+        $cartService->applyDiscount($cart, $discountData);
+        $cartService->applyDiscount($cart, $discountData); // Apply again
 
         $cart->refresh();
-        expect(array_count_values($cart->discount_codes)['SAVE20'])->toBe(1);
+        expect($cart->discount_data)->toHaveKey('SAVE20');
+        expect(count($cart->discount_data))->toBe(1); // Only one discount should exist
     });
 
     it('can remove discount code', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
-        $cartService->applyDiscountCode($cart, 'SAVE20');
 
-        $cartService->removeDiscountCode($cart, 'SAVE20');
+        $discountData = [
+            'code' => 'SAVE20',
+            'type' => 'percentage',
+            'value' => 20,
+            'conditions' => [],
+        ];
+
+        $cartService->applyDiscount($cart, $discountData);
+        $cartService->removeDiscount($cart, 'SAVE20');
 
         $cart->refresh();
-        expect($cart->discount_codes)->not()->toContain('SAVE20');
+        expect($cart->discount_data)->not()->toHaveKey('SAVE20');
     });
 
     it('can set shipping method', function () {
