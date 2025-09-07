@@ -26,7 +26,6 @@ class PurgeCartsCommand extends Command
 
         $expiredDate = now()->subDays($days);
 
-        // First, mark expired carts
         $expiredCartsQuery = Cart::where('expires_at', '<', now())
             ->where('status', '!=', CartStatusEnum::Expired);
 
@@ -41,7 +40,6 @@ class PurgeCartsCommand extends Command
             }
         }
 
-        // Then, find old carts to delete
         $oldCartsQuery = Cart::where('updated_at', '<', $expiredDate)
             ->whereIn('status', [CartStatusEnum::Expired, CartStatusEnum::Abandoned]);
 
@@ -52,14 +50,13 @@ class PurgeCartsCommand extends Command
 
             if ($force || $this->confirm('Delete old carts permanently?')) {
                 $oldCartsQuery->each(function (Cart $cart) {
-                    $cart->forceDelete(); // Permanent deletion
+                    $cart->forceDelete();
                 });
                 $this->info("Deleted {$oldCount} old carts");
                 Log::info("Simple Cart cleanup: deleted {$oldCount} old carts");
             }
         }
 
-        // Clean up empty carts
         $emptyCartsQuery = Cart::whereDoesntHave('items')
             ->where('created_at', '<', now()->subDays(1))
             ->where('status', CartStatusEnum::Active);

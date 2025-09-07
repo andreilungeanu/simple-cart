@@ -46,7 +46,6 @@ class CartItem extends Model
         return $this->belongsTo(Cart::class);
     }
 
-    // Simple getters only - no calculations
     public function getLineTotal(): float
     {
         return round((float) $this->price * $this->quantity, 2);

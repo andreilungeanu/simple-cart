@@ -60,7 +60,6 @@ class Cart extends Model
         return $this->hasMany(CartItem::class);
     }
 
-    // Simple getters - NO business logic/calculations in models
     public function isExpired(): bool
     {
         return $this->expires_at && $this->expires_at->isPast();
@@ -71,7 +70,6 @@ class Cart extends Model
         return $this->items()->count() === 0;
     }
 
-    // Computed properties for read-only access
     public function getSubtotalAttribute(): float
     {
         return round($this->items->sum(fn ($item) => $item->getLineTotal()), 2);

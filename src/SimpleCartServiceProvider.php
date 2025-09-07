@@ -31,11 +31,11 @@ class SimpleCartServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        // Register Configuration
-        $this->app->singleton(CartConfiguration::class, fn () => CartConfiguration::fromConfig(config('simple-cart', []))
+        $this->app->singleton(
+            CartConfiguration::class,
+            fn() => CartConfiguration::fromConfig(config('simple-cart', []))
         );
 
-        // Register Services with auto-resolution
         $this->app->singleton(CartService::class);
         $this->app->singleton(DiscountCalculator::class);
         $this->app->singleton(ShippingCalculator::class);

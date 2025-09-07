@@ -21,7 +21,7 @@ class ShippingCalculator
             return 0.0;
         }
 
-        // Check for free shipping discounts first (higher priority)
+    // Free shipping discounts take precedence
         $discounts = $appliedDiscounts ?? $cart->discount_data ?? [];
         foreach ($discounts as $discount) {
             if (($discount['type'] ?? '') === 'free_shipping') {
@@ -29,7 +29,7 @@ class ShippingCalculator
             }
         }
 
-        // Then check threshold-based free shipping
+    // Then threshold-based free shipping
         if ($this->config->freeShippingThreshold !== null) {
             $subtotal = $cart->subtotal;
             if ($subtotal >= $this->config->freeShippingThreshold) {
@@ -48,7 +48,7 @@ class ShippingCalculator
             return false;
         }
 
-        // Check for free shipping discounts first
+    // Free shipping discounts take precedence
         $discounts = $appliedDiscounts ?? $cart->discount_data ?? [];
         foreach ($discounts as $discount) {
             if (($discount['type'] ?? '') === 'free_shipping') {
@@ -56,7 +56,7 @@ class ShippingCalculator
             }
         }
 
-        // Then check threshold-based free shipping
+    // Then threshold-based free shipping
         return $this->config->freeShippingThreshold !== null &&
                $cart->subtotal >= $this->config->freeShippingThreshold;
     }

@@ -16,13 +16,11 @@ readonly class CartConfiguration
 
     public static function fromConfig(array $config): self
     {
-        // Check if the shipping config exists and has the threshold key
         $threshold = 100.0; // default
         if (isset($config['shipping']) && array_key_exists('free_shipping_threshold', $config['shipping'])) {
             $threshold = $config['shipping']['free_shipping_threshold'];
         }
 
-        // Convert 0 or null to null to disable free shipping
         if ($threshold === 0 || $threshold === 0.0 || $threshold === null) {
             $threshold = null;
         } else {
