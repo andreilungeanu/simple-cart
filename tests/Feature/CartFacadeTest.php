@@ -30,7 +30,22 @@ describe('Cart Facade', function () {
 
     it('can calculate totals via facade', function () {
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
+
+        // Apply shipping
+        Cart::applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
+
+        // Apply tax
+        Cart::applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'name' => 'Sales Tax',
+            'rate' => 0.0725,
+            'conditions' => [
+                'rates_per_category' => [
+                    'books' => 0.05,
+                ],
+            ],
+        ]);
+
         $cart->refresh();
 
         $subtotal = Cart::calculateSubtotal($cart);

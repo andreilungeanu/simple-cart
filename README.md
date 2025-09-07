@@ -11,7 +11,7 @@
 
 ## 🎯 Features
 - ✅ **Event-Driven Design** - Comprehensive listeners for cart lifecycle events
-- ✅ **Advanced Calculations** - Multi-zone tax, flexible shipping, comprehensive discount system
+- ✅ **Advanced Calculations** - Dynamic tax system, flexible shipping, comprehensive discounts
 - ✅ **Multiple Cart Instances** - Proper user/session isolation and state management
 - ✅ **Service-Based API** - Clean service layer for cart operations
 - ✅ **Database Persistence** - Reliable storage with automatic expiration handling
@@ -81,42 +81,186 @@ Cart::applyShipping($cart, [
     'carrier' => 'UPS'
 ]);
 
-Cart::setTaxZone($cart, 'US');
+// Apply tax
+Cart::applyTax($cart, [
+    'code' => 'VAT_UK',
+    'name' => 'UK VAT',
+    'rate' => 0.20,
+    'apply_to_shipping' => true
+]);
 
 echo "Final Total: " . Cart::calculateTotal($cart);
 ```
 
 ## 🛠️ Advanced Usage
 
-### Tax Zone Configuration
+### Dynamic Tax System
+
+The Simple Cart package uses a **dynamic tax system** where your application provides complete tax data instead of relying on pre-configured tax zones. This gives you full control over tax rates, calculation logic, and complex tax scenarios.
 
 ```php
 use AndreiLungeanu\SimpleCart\Facades\Cart;
 
-// Create cart with Romanian tax zone (19% VAT, 5% for books)
+// Create cart and apply tax
 $cart = Cart::create(userId: 123);
-Cart::setTaxZone($cart, 'RO');
+
+// Simple tax application
+Cart::applyTax($cart, [
+    'code' => 'VAT_DE',
+    'name' => 'German VAT',
+    'rate' => 0.19,
+    'apply_to_shipping' => true
+]);
 
 Cart::addItem($cart, [
     'product_id' => 'book_123',
     'name' => 'Laravel Guide',
     'price' => 45.00,
     'quantity' => 1,
-    'category' => 'books' // 5% VAT rate
+    'category' => 'books'
 ]);
 
 Cart::addItem($cart, [
     'product_id' => 'laptop_456',
     'name' => '15" Laptop',
     'price' => 899.99,
-    'quantity' => 1 // Default 19% VAT rate
+    'quantity' => 1
 ]);
 
-$tax = Cart::calculateTax($cart); // Calculated per category
+$tax = Cart::calculateTax($cart); // Calculated based on applied tax data
 $total = Cart::calculateTotal($cart);
-
-// Note: VAT exemption functionality not yet implemented
 ```
+
+#### Advanced Tax Configuration
+
+```php
+// Complex VAT with category-specific rates
+Cart::applyTax($cart, [
+    'code' => 'VAT_FR',
+    'name' => 'French VAT',
+    'rate' => 0.20,                    // Standard VAT rate
+    'apply_to_shipping' => true,
+    'shipping_rate' => 0.20,           // Same rate for shipping
+    'conditions' => [
+        'rates_per_item' => [          // Highest priority
+            'luxury_watch_123' => 0.20, // Luxury goods (standard rate)
+            'medical_device_456' => 0.0, // Medical devices (exempt)
+        ],
+        'rates_per_category' => [      // Medium priority  
+            'books' => 0.055,          // Books (reduced rate)
+            'food' => 0.055,           // Food products (reduced rate)
+            'pharmaceuticals' => 0.021, // Medicines (super-reduced rate)
+            'digital_services' => 0.20, // Digital services (standard rate)
+        ],
+        'rates_per_type' => [          // Lower priority (from metadata)
+            'luxury' => 0.20,          // Luxury classification
+            'essential' => 0.055,      // Essential goods
+        ]
+    ]
+]);
+```
+
+#### Tax Priority System
+
+The tax calculator uses a priority-based system to determine rates:
+
+1. **Item-specific rates** (highest priority) - `rates_per_item[product_id]`
+2. **Category-specific rates** - `rates_per_category[category]`
+3. **Type-specific rates** - `rates_per_type[metadata.type]`
+4. **Default rate** (lowest priority) - `rate`
+
+```php
+// Example: Item with category "books" and type "luxury"
+Cart::addItem($cart, [
+    'product_id' => 'rare_book_789',
+    'category' => 'books',           // Would use 5% rate
+    'metadata' => ['type' => 'luxury'] // Would use 25% rate
+]);
+
+// Result: Uses 5% (category rate) because category has higher priority than type
+```
+
+#### Tax Management
+
+```php
+// Apply tax
+Cart::applyTax($cart, [
+    'code' => 'STATE_TAX',
+    'name' => 'State Sales Tax',
+    'rate' => 0.0625
+]);
+
+// Get applied tax data
+$appliedTax = Cart::getAppliedTax($cart);
+if ($appliedTax) {
+    echo "Tax: {$appliedTax['name']} - {$appliedTax['rate']}%";
+}
+
+// Remove tax
+Cart::removeTax($cart);
+
+// Calculate tax amount
+$taxAmount = Cart::calculateTax($cart);
+```
+
+#### Real-World Tax Examples
+
+```php
+// US State + Local Tax
+Cart::applyTax($cart, [
+    'code' => 'US_TX_COMBINED',
+    'name' => 'Texas Combined Tax',
+    'rate' => 0.0825, // 8.25% combined rate
+    'apply_to_shipping' => false,
+    'conditions' => [
+        'rates_per_category' => [
+            'clothing' => 0.06,     // Lower clothing rate
+            'prepared_food' => 0.10 // Higher prepared food rate
+        ]
+    ]
+]);
+
+// Canadian GST/HST
+Cart::applyTax($cart, [
+    'code' => 'CA_HST_ON',
+    'name' => 'Ontario HST',
+    'rate' => 0.13, // 13% HST
+    'apply_to_shipping' => true,
+]);
+
+// EU VAT with exemptions
+Cart::applyTax($cart, [
+    'code' => 'EU_VAT_DE',
+    'name' => 'German VAT',
+    'rate' => 0.19,
+    'apply_to_shipping' => true,
+    'conditions' => [
+        'rates_per_category' => [
+            'books' => 0.07,        // Reduced rate
+            'food' => 0.07,         // Reduced rate
+            'medical' => 0.0,       // Exempt
+        ]
+    ]
+]);
+
+// API-based dynamic tax (e.g., Avalara, TaxJar)
+$taxData = TaxService::calculateTax($cart->items, $shippingAddress);
+Cart::applyTax($cart, [
+    'code' => 'API_CALCULATED',
+    'name' => 'Dynamic Tax Rate',
+    'rate' => $taxData['rate'],
+    'apply_to_shipping' => $taxData['apply_to_shipping'],
+    'conditions' => $taxData['item_rates'] ?? []
+]);
+```
+
+**Tax System Benefits:**
+- ✅ **Complete flexibility** - Support any tax scenario or external service
+- ✅ **Priority-based rates** - Clear precedence for complex tax rules  
+- ✅ **API integration ready** - Perfect for external tax calculation services
+- ✅ **Item-level control** - Granular tax overrides per product
+- ✅ **Real-time rates** - Dynamic tax calculations based on current rules
+- ✅ **No config dependency** - Application provides all tax data
 
 ### Dynamic Shipping System
 
@@ -145,12 +289,6 @@ if (Cart::isFreeShippingApplied($cart)) {
     echo "Shipping cost: $" . $shipping;
 }
 
-// To disable free shipping completely, set threshold to null in config:
-// 'free_shipping_threshold' => null,  // Completely disable free shipping
-
-// Note: Free shipping can be disabled by setting the threshold to null or 0 in config:
-// 'free_shipping_threshold' => null,  // Completely disable free shipping
-```
 
 #### Simple Shipping Integration
 
@@ -408,6 +546,22 @@ Cart::getAppliedDiscounts(Cart $cart): array
 Cart::calculateDiscounts(Cart $cart): float
 ```
 
+### Tax API Methods
+
+```php
+// Apply tax with complete data
+Cart::applyTax(Cart $cart, array $taxData): void
+
+// Remove tax from cart
+Cart::removeTax(Cart $cart): void
+
+// Get currently applied tax data
+Cart::getAppliedTax(Cart $cart): ?array
+
+// Calculate tax amount for cart
+Cart::calculateTax(Cart $cart): float
+```
+
 ### Shipping API Methods
 
 ```php
@@ -515,48 +669,16 @@ return [
         'cleanup_expired' => env('CART_CLEANUP_EXPIRED', true),
     ],
     
-    'tax' => [
-        'default_zone' => env('CART_DEFAULT_TAX_ZONE', 'US'),
-        'settings' => [
-            'zones' => [
-                'US' => [
-                    'name' => 'United States',
-                    'default_rate' => env('CART_US_TAX_RATE', 0.0725),
-                    'apply_to_shipping' => false,
-                    'rates_by_category' => [
-                        'digital' => 0.0,
-                        'food' => 0.03,
-                    ],
-                ],
-                'RO' => [
-                    'name' => 'Romania',
-                    'default_rate' => env('CART_RO_TAX_RATE', 0.19),
-                    'apply_to_shipping' => true,
-                    'rates_by_category' => [
-                        'books' => 0.05,
-                        'food' => 0.09,
-                    ],
-                ],
-            ],
-        ],
-    ],
-    
     'shipping' => [
         'free_shipping_threshold' => env('CART_FREE_SHIPPING_THRESHOLD', 100.00),
         // Set to null or 0 to disable free shipping completely
-        // 'free_shipping_threshold' => null,
-        // Note: The package uses a dynamic shipping system where your application
-        // provides complete shipping data via Cart::applyShipping() method.
-        // This gives you full control over shipping rates, carriers, and delivery options.
+
     ],
     
     'discounts' => [
         'allow_stacking' => env('CART_ALLOW_DISCOUNT_STACKING', false),
         'max_discount_codes' => env('CART_MAX_DISCOUNT_CODES', 3),
-        // Note: Discount codes are no longer configured here.
-        // The package now uses a dynamic discount system where your application
-        // provides complete discount data via Cart::applyDiscount() method.
-        // This gives you full control over discount logic, validation, and conditions.
+
     ],
 ];
 ```
@@ -564,14 +686,12 @@ return [
 
 ### Run Tests
 
-```bash
-# Full test suite (121 tests, ~3.4s)
+```php
+// Full test suite 
 composer test
-
-# Parallel execution for faster results  
 ./vendor/bin/pest --parallel
 
-# Performance profiling
+// Performance profiling
 ./vendor/bin/pest tests/Performance/ --profile
 ```
 

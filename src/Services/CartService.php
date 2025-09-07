@@ -202,14 +202,23 @@ class CartService
         return $cart->shipping_data;
     }
 
-    public function setTaxZone(Cart $cart, string $zone): void
+    public function applyTax(Cart $cart, array $taxData): void
     {
-        if (! $this->config->getTaxSettings($zone)) {
-            throw new CartException("Invalid tax zone: {$zone}");
-        }
+        $this->validateTaxData($taxData);
 
-        $cart->update(['tax_zone' => $zone]);
-        event(new CartUpdated($cart, 'tax_zone_updated', ['zone' => $zone]));
+        $cart->update(['tax_data' => $taxData]);
+        event(new CartUpdated($cart, 'tax_applied', ['tax_data' => $taxData]));
+    }
+
+    public function removeTax(Cart $cart): void
+    {
+        $cart->update(['tax_data' => null]);
+        event(new CartUpdated($cart, 'tax_removed'));
+    }
+
+    public function getAppliedTax(Cart $cart): ?array
+    {
+        return $cart->tax_data;
     }
 
     public function clear(Cart $cart): void
@@ -218,6 +227,7 @@ class CartService
         $cart->update([
             'discount_data' => [],
             'shipping_data' => null,
+            'tax_data' => null,
         ]);
 
         event(new CartUpdated($cart, 'cleared'));
@@ -269,6 +279,44 @@ class CartService
 
         if (isset($itemData['quantity']) && $itemData['quantity'] < 1) {
             throw new CartException('Quantity must be at least 1');
+        }
+    }
+
+    private function validateTaxData(array $taxData): void
+    {
+        if (! isset($taxData['rate'])) {
+            throw new CartException('Tax data must include a rate');
+        }
+
+        if (! is_numeric($taxData['rate']) || $taxData['rate'] < 0 || $taxData['rate'] > 1) {
+            throw new CartException('Tax rate must be a number between 0 and 1');
+        }
+
+        // Validate shipping rate if provided
+        if (isset($taxData['shipping_rate'])) {
+            if (! is_numeric($taxData['shipping_rate']) || $taxData['shipping_rate'] < 0 || $taxData['shipping_rate'] > 1) {
+                throw new CartException('Shipping tax rate must be a number between 0 and 1');
+            }
+        }
+
+        // Validate condition rates if provided
+        if (isset($taxData['conditions'])) {
+            $this->validateTaxConditionRates($taxData['conditions']);
+        }
+    }
+
+    private function validateTaxConditionRates(array $conditions): void
+    {
+        $rateFields = ['rates_per_item', 'rates_per_category', 'rates_per_type'];
+
+        foreach ($rateFields as $field) {
+            if (isset($conditions[$field]) && is_array($conditions[$field])) {
+                foreach ($conditions[$field] as $key => $rate) {
+                    if (! is_numeric($rate) || $rate < 0 || $rate > 1) {
+                        throw new CartException("Invalid tax rate for {$field}[{$key}]: must be between 0 and 1");
+                    }
+                }
+            }
         }
     }
 }

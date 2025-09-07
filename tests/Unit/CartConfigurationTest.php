@@ -12,10 +12,6 @@ describe('CartConfiguration', function () {
             'shipping' => [
                 'free_shipping_threshold' => 75.0,
             ],
-            'tax' => [
-                'default_zone' => 'RO',
-                'settings' => ['zones' => ['RO' => ['default_rate' => 0.19]]],
-            ],
             'discounts' => [
                 'allow_stacking' => true,
                 'max_discount_codes' => 5,
@@ -26,7 +22,6 @@ describe('CartConfiguration', function () {
 
         expect($config->ttlDays)->toBe(45)
             ->and($config->freeShippingThreshold)->toBe(75.0)
-            ->and($config->defaultTaxZone)->toBe('RO')
             ->and($config->allowDiscountStacking)->toBeTrue()
             ->and($config->maxDiscountCodes)->toBe(5);
     });
@@ -36,32 +31,28 @@ describe('CartConfiguration', function () {
 
         expect($config->ttlDays)->toBe(30)
             ->and($config->freeShippingThreshold)->toBe(100.0)
-            ->and($config->defaultTaxZone)->toBe('US')
             ->and($config->allowDiscountStacking)->toBeFalse()
             ->and($config->maxDiscountCodes)->toBe(3);
     });
 
-    it('gets tax settings for zone', function () {
-        $configArray = [
-            'tax' => [
-                'settings' => [
-                    'zones' => [
-                        'US' => ['default_rate' => 0.0725],
-                        'RO' => ['default_rate' => 0.19],
-                    ],
-                ],
-            ],
-        ];
+    it('handles free shipping threshold edge cases', function () {
+        // Test null threshold (disables free shipping)
+        $config1 = CartConfiguration::fromConfig([
+            'shipping' => ['free_shipping_threshold' => null],
+        ]);
+        expect($config1->freeShippingThreshold)->toBeNull();
 
-        $config = CartConfiguration::fromConfig($configArray);
+        // Test zero threshold (disables free shipping)
+        $config2 = CartConfiguration::fromConfig([
+            'shipping' => ['free_shipping_threshold' => 0],
+        ]);
+        expect($config2->freeShippingThreshold)->toBeNull();
 
-        $usSettings = $config->getTaxSettings('US');
-        $roSettings = $config->getTaxSettings('RO');
-        $unknownSettings = $config->getTaxSettings('UNKNOWN');
-
-        expect($usSettings['default_rate'])->toBe(0.0725)
-            ->and($roSettings['default_rate'])->toBe(0.19)
-            ->and($unknownSettings)->toBeNull();
+        // Test valid threshold
+        $config3 = CartConfiguration::fromConfig([
+            'shipping' => ['free_shipping_threshold' => 50.0],
+        ]);
+        expect($config3->freeShippingThreshold)->toBe(50.0);
     });
 
     it('is readonly', function () {

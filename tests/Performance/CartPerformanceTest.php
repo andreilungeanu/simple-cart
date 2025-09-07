@@ -60,7 +60,19 @@ describe('Performance Tests', function () {
             ]);
         }
 
-        $cart->update(['shipping_method' => 'standard', 'tax_zone' => 'US']);
+        // Apply shipping and tax for calculations
+        $cartService->applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
+        $cartService->applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'rate' => 0.0725,
+            'conditions' => [
+                'rates_per_category' => [
+                    'books' => 0.05,
+                    'food' => 0.03,
+                ],
+            ],
+        ]);
+
         $cart->refresh();
 
         $startTime = microtime(true);
@@ -76,7 +88,7 @@ describe('Performance Tests', function () {
         $executionTime = $endTime - $startTime;
 
         expect($subtotal)->toBeGreaterThan(0)
-            ->and($total)->toBeGreaterThan($subtotal)
+            ->and($total)->toBeGreaterThan($subtotal) // Should be greater due to tax and shipping
             ->and($summary)->toHaveKey('total')
             ->and($executionTime)->toBeLessThan(0.1); // Should complete in under 100ms
     });

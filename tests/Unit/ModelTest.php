@@ -15,8 +15,8 @@ describe('Cart Model', function () {
 
         expect($fillable)->toContain('user_id')
             ->and($fillable)->toContain('session_id')
-            ->and($fillable)->toContain('tax_zone')
             ->and($fillable)->toContain('shipping_data')
+            ->and($fillable)->toContain('tax_data')
             ->and($fillable)->toContain('discount_data')
             ->and($fillable)->toContain('metadata')
             ->and($fillable)->toContain('status')

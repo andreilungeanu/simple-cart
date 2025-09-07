@@ -9,9 +9,7 @@ readonly class CartConfiguration
     public function __construct(
         public int $ttlDays,
         public ?float $freeShippingThreshold,
-        public array $taxSettings,
         public array $discounts,
-        public string $defaultTaxZone = 'US',
         public bool $allowDiscountStacking = false,
         public int $maxDiscountCodes = 3,
     ) {}
@@ -34,16 +32,9 @@ readonly class CartConfiguration
         return new self(
             ttlDays: $config['storage']['ttl_days'] ?? 30,
             freeShippingThreshold: $threshold,
-            taxSettings: $config['tax']['settings']['zones'] ?? [],
             discounts: $config['discounts']['codes'] ?? [],
-            defaultTaxZone: $config['tax']['default_zone'] ?? 'US',
             allowDiscountStacking: $config['discounts']['allow_stacking'] ?? false,
             maxDiscountCodes: $config['discounts']['max_discount_codes'] ?? 3,
         );
-    }
-
-    public function getTaxSettings(string $zone): ?array
-    {
-        return $this->taxSettings[$zone] ?? null;
     }
 }

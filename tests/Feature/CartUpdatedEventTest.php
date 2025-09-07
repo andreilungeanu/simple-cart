@@ -128,17 +128,21 @@ describe('CartUpdated Event', function () {
         });
     });
 
-    it('is dispatched when tax zone is set', function () {
+    it('is dispatched when tax is applied', function () {
         Event::fake();
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->setTaxZone($cart, 'RO');
+        $cartService->applyTax($cart, [
+            'code' => 'VAT',
+            'name' => 'Value Added Tax',
+            'rate' => 0.19,
+        ]);
 
         Event::assertDispatched(CartUpdated::class, function ($event) use ($cart) {
             return $event->cart->id === $cart->id
-                && $event->action === 'tax_zone_updated'
-                && $event->metadata['zone'] === 'RO';
+                && $event->action === 'tax_applied'
+                && $event->metadata['tax_data']['code'] === 'VAT';
         });
     });
 

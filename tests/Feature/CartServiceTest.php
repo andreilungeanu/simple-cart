@@ -237,7 +237,19 @@ describe('CartService - Calculations', function () {
     it('calculates tax correctly', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['tax_zone' => 'US']);
+
+        // Apply tax with category-specific rates
+        $cartService->applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'name' => 'Sales Tax',
+            'rate' => 0.0725,
+            'conditions' => [
+                'rates_per_category' => [
+                    'books' => 0.05,
+                ],
+            ],
+        ]);
+
         $cart->refresh();
 
         $tax = $cartService->calculateTax($cart);
@@ -251,7 +263,22 @@ describe('CartService - Calculations', function () {
     it('calculates total correctly', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
+
+        // Apply shipping
+        $cartService->applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
+
+        // Apply tax
+        $cartService->applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'name' => 'Sales Tax',
+            'rate' => 0.0725,
+            'conditions' => [
+                'rates_per_category' => [
+                    'books' => 0.05,
+                ],
+            ],
+        ]);
+
         $cart->refresh();
 
         $total = $cartService->calculateTotal($cart);
@@ -353,22 +380,34 @@ describe('CartService - Discounts & Settings', function () {
         ]))->toThrow(CartException::class, 'Shipping data must include method_name and cost');
     });
 
-    it('can set tax zone', function () {
+    it('can apply tax', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        $cartService->setTaxZone($cart, 'RO');
+        $cartService->applyTax($cart, [
+            'code' => 'VAT',
+            'name' => 'Value Added Tax',
+            'rate' => 0.19,
+        ]);
 
         $cart->refresh();
-        expect($cart->tax_zone)->toBe('RO');
+        expect($cart->tax_data)->toBe([
+            'code' => 'VAT',
+            'name' => 'Value Added Tax',
+            'rate' => 0.19,
+        ]);
     });
 
-    it('throws exception for invalid tax zone', function () {
+    it('throws exception for invalid tax data', function () {
         $cartService = app(CartService::class);
         $cart = $cartService->create(userId: 1);
 
-        expect(fn () => $cartService->setTaxZone($cart, 'INVALID'))
-            ->toThrow(CartException::class, 'Invalid tax zone: INVALID');
+        expect(fn () => $cartService->applyTax($cart, [
+                'code' => 'INVALID',
+                'name' => 'Invalid Tax',
+                // Missing required 'rate' field
+            ]))
+            ->toThrow(CartException::class, 'Tax data must include a rate');
     });
 
 });
@@ -378,7 +417,22 @@ describe('CartService - Cart Summary', function () {
     it('returns comprehensive cart summary', function () {
         $cartService = app(CartService::class);
         $cart = createTestCartWithItems();
-        $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99], 'tax_zone' => 'US']);
+
+        // Apply shipping
+        $cartService->applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
+
+        // Apply tax
+        $cartService->applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'name' => 'Sales Tax',
+            'rate' => 0.0725,
+            'conditions' => [
+                'rates_per_category' => [
+                    'books' => 0.05,
+                ],
+            ],
+        ]);
+
         $cart->refresh();
 
         $summary = $cartService->getCartSummary($cart);
@@ -496,8 +550,11 @@ describe('CartService - Advanced Testing', function () {
             'quantity' => 2,
         ]);
 
-        $this->cartService->setTaxZone($cart, 'US');
-        $this->cartService->setShippingMethod($cart, 'express');
+        $this->cartService->applyTax($cart, [
+            'code' => 'SALES_TAX',
+            'rate' => 0.0725,
+        ]);
+        $this->cartService->applyShipping($cart, ['method_name' => 'Express', 'cost' => 15.99]);
 
         $total = $this->cartService->calculateTotal($cart);
 
