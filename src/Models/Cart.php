@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AndreiLungeanu\SimpleCart\Models;
 
+use AndreiLungeanu\SimpleCart\Database\Factories\CartFactory;
 use AndreiLungeanu\SimpleCart\Enums\CartStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -31,7 +33,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Cart extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -146,6 +148,14 @@ class Cart extends Model
     public function scopeForUser(Builder $query, $userId): void
     {
         $query->where('user_id', $userId);
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return CartFactory::new();
     }
 
     /**

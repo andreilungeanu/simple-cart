@@ -43,7 +43,7 @@ describe('CartUpdated Event', function () {
     it('is dispatched when item is updated', function () {
         Event::fake();
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->updateQuantity($cart, 'PROD-1', 5);
 
@@ -57,7 +57,7 @@ describe('CartUpdated Event', function () {
     it('is dispatched when item is removed', function () {
         Event::fake();
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->removeItem($cart, 'PROD-1');
 
@@ -149,7 +149,7 @@ describe('CartUpdated Event', function () {
     it('is dispatched when cart is cleared', function () {
         Event::fake();
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->clear($cart);
 

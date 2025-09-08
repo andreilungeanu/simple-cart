@@ -73,7 +73,7 @@ describe('PurgeCartsCommand', function () {
         $emptyCart->save();
 
         // Create cart with items
-        $cartWithItems = createTestCartWithItems();
+        $cartWithItems = Cart::factory()->withTestItems()->create();
         $cartWithItems->created_at = now()->subDays(2);
         $cartWithItems->updated_at = now()->subDays(2);
         $cartWithItems->save();

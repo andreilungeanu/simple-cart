@@ -29,7 +29,7 @@ describe('Cart Facade', function () {
     });
 
     it('can calculate totals via facade', function () {
-        $cart = createTestCartWithItems();
+        $cart = CartModel::factory()->withTestItems()->create();
 
         // Apply shipping
         Cart::applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);

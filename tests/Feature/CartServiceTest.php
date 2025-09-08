@@ -124,7 +124,7 @@ describe('CartService - Item Management', function () {
 
     it('can update item quantity', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->updateQuantity($cart, 'PROD-1', 5);
 
@@ -136,7 +136,7 @@ describe('CartService - Item Management', function () {
 
     it('removes item when quantity is set to zero', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->updateQuantity($cart, 'PROD-1', 0);
 
@@ -146,7 +146,7 @@ describe('CartService - Item Management', function () {
 
     it('can remove item from cart', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->removeItem($cart, 'PROD-1');
 
@@ -177,7 +177,7 @@ describe('CartService - Item Management', function () {
 
     it('can clear cart', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $cartService->clear($cart);
 
@@ -193,7 +193,7 @@ describe('CartService - Calculations', function () {
 
     it('calculates subtotal correctly', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         $subtotal = $cartService->calculateSubtotal($cart);
 
@@ -205,7 +205,7 @@ describe('CartService - Calculations', function () {
 
     it('calculates shipping cost correctly', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
         $cart->update(['shipping_data' => ['method_name' => 'Standard', 'cost' => 5.99]]);
         $cart->refresh();
 
@@ -236,7 +236,7 @@ describe('CartService - Calculations', function () {
 
     it('calculates tax correctly', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         // Apply tax with category-specific rates
         $cartService->applyTax($cart, [
@@ -262,7 +262,7 @@ describe('CartService - Calculations', function () {
 
     it('calculates total correctly', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         // Apply shipping
         $cartService->applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
@@ -416,7 +416,7 @@ describe('CartService - Cart Summary', function () {
 
     it('returns comprehensive cart summary', function () {
         $cartService = app(CartService::class);
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
 
         // Apply shipping
         $cartService->applyShipping($cart, ['method_name' => 'Standard', 'cost' => 5.99]);
@@ -480,7 +480,7 @@ describe('CartService - Advanced Testing', function () {
 
         app()->instance(\AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator::class, $mockTaxCalculator);
 
-        $cart = createTestCartWithItems();
+        $cart = Cart::factory()->withTestItems()->create();
         $taxAmount = app(\AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator::class)->calculate($cart, 100.0);
 
         expect($taxAmount)->toBe(15.50);
@@ -512,7 +512,7 @@ describe('CartService - Advanced Testing', function () {
     it('maintains performance with various cart sizes', function (int $itemCount) {
         $startTime = microtime(true);
 
-        $cart = createTestCart();
+        $cart = Cart::factory()->create();
 
         // Create unique items to avoid constraint violations
         for ($i = 0; $i < $itemCount; $i++) {

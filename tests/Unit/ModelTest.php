@@ -36,7 +36,7 @@ describe('Cart Model', function () {
     });
 
     it('has items relationship', function () {
-        $cart = createTestCart();
+        $cart = Cart::factory()->create();
 
         $relation = $cart->items();
 

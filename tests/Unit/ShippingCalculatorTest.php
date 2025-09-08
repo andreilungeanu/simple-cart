@@ -66,23 +66,15 @@ describe('ShippingCalculator - Legacy Tests (Updated for Dynamic Shipping)', fun
         ]);
         $calculator = new ShippingCalculator($config);
 
-        $cart = createTestCart();
-        $cart->shipping_data = [
-            'method_name' => 'Standard Shipping',
-            'cost' => 5.99,
-        ];
-        $cart->save();
-
-        // Add high-value item to test that free shipping doesn't apply
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'HIGH-VALUE',
-            'name' => 'Expensive Item',
-            'price' => 200.00,
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']); // Refresh to load the items
+        $cart = Cart::factory()
+            ->withShipping(['method_name' => 'Standard Shipping', 'cost' => 5.99])
+            ->hasItems(1, [
+                'product_id' => 'HIGH-VALUE',
+                'name' => 'Expensive Item',
+                'price' => 200.00,
+                'quantity' => 1,
+            ])
+            ->create();
 
         $cost = $calculator->calculate($cart);
         $isFreeShippingApplied = $calculator->isFreeShippingApplied($cart);
@@ -100,22 +92,15 @@ describe('ShippingCalculator - Legacy Tests (Updated for Dynamic Shipping)', fun
         ]);
         $calculator = new ShippingCalculator($config);
 
-        $cart = createTestCart();
-        $cart->shipping_data = [
-            'method_name' => 'Standard Shipping',
-            'cost' => 5.99,
-        ];
-        $cart->save();
-
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'MEDIUM-VALUE',
-            'name' => 'Medium Item',
-            'price' => 100.00,
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']);
+        $cart = Cart::factory()
+            ->withShipping(['method_name' => 'Standard Shipping', 'cost' => 5.99])
+            ->hasItems(1, [
+                'product_id' => 'MEDIUM-VALUE',
+                'name' => 'Medium Item',
+                'price' => 100.00,
+                'quantity' => 1,
+            ])
+            ->create();
 
         $cost = $calculator->calculate($cart);
 

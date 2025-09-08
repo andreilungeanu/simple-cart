@@ -2,7 +2,6 @@
 
 use AndreiLungeanu\SimpleCart\Models\Cart;
 use AndreiLungeanu\SimpleCart\Models\CartItem;
-use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,171 +33,34 @@ expect()->extend('toBeOne', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Functions
+| Factory Usage Examples
 |--------------------------------------------------------------------------
 |
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
+| Below are some examples of how to use the new factories in your tests.
+| These replace the old helper functions for cleaner, more flexible testing.
+|
+| Basic Cart:
+|   Cart::factory()->create()
+|
+| Cart with items:
+|   Cart::factory()->has(CartItem::factory()->count(3))->create()
+|
+| Specific user cart:
+|   Cart::factory()->forUser(1)->create()
+|
+| Expired cart:
+|   Cart::factory()->expired()->create()
+|
+| Cart with discounts:
+|   Cart::factory()->withDiscounts(['SAVE10', 'PERCENT15'])->create()
+|
+| Electronics items:
+|   CartItem::factory()->electronics()->count(5)->create()
+|
+| Cart with specific items:
+|   Cart::factory()
+|       ->has(CartItem::factory()->testProduct1())
+|       ->has(CartItem::factory()->testProduct2())
+|       ->create()
 |
 */
-
-function createTestCart(int $userId = 1): Cart
-{
-    return Cart::create([
-        'id' => Str::ulid()->toString(),
-        'user_id' => $userId,
-        'tax_zone' => 'US',
-        'status' => \AndreiLungeanu\SimpleCart\Enums\CartStatusEnum::Active,
-        'expires_at' => now()->addDays(30),
-    ]);
-}
-
-function createTestCartWithItems(int $userId = 1): Cart
-{
-    $cart = createTestCart($userId);
-
-    CartItem::create([
-        'cart_id' => $cart->id,
-        'product_id' => 'PROD-1',
-        'name' => 'Test Product 1',
-        'price' => 29.99,
-        'quantity' => 2,
-        'category' => 'electronics',
-    ]);
-
-    CartItem::create([
-        'cart_id' => $cart->id,
-        'product_id' => 'PROD-2',
-        'name' => 'Test Product 2',
-        'price' => 15.00,
-        'quantity' => 1,
-        'category' => 'books',
-    ]);
-
-    return $cart->refresh(['items']);
-}
-
-function createTestCartWithCustomItems(int $userId = 1, array $itemsData = []): Cart
-{
-    $cart = createTestCart($userId);
-
-    foreach ($itemsData as $itemData) {
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => $itemData['product_id'] ?? 'PROD-'.uniqid(),
-            'name' => $itemData['name'] ?? 'Test Product',
-            'price' => $itemData['price'] ?? 10.00,
-            'quantity' => $itemData['quantity'] ?? 1,
-            'category' => $itemData['category'] ?? 'general',
-            'metadata' => $itemData['metadata'] ?? [],
-        ]);
-    }
-
-    return $cart->refresh(['items']);
-}
-
-function createExpiredCart(int $userId = 1): Cart
-{
-    return Cart::create([
-        'id' => Str::ulid()->toString(),
-        'user_id' => $userId,
-        'tax_zone' => 'US',
-        'status' => \AndreiLungeanu\SimpleCart\Enums\CartStatusEnum::Expired,
-        'expires_at' => now()->subDay(),
-    ]);
-}
-
-function createAbandonedCart(int $userId = 1): Cart
-{
-    return Cart::create([
-        'id' => Str::ulid()->toString(),
-        'user_id' => $userId,
-        'tax_zone' => 'US',
-        'status' => \AndreiLungeanu\SimpleCart\Enums\CartStatusEnum::Abandoned,
-        'expires_at' => now()->addDays(30),
-    ]);
-}
-
-function createCartWithDiscounts(int $userId = 1, array $discounts = []): Cart
-{
-    $cart = createTestCart($userId);
-
-    if (! empty($discounts)) {
-        $discountData = [];
-        foreach ($discounts as $discount) {
-            if (is_string($discount)) {
-                // Convert old string format to new data format
-                $discountData[$discount] = createTestDiscountData($discount);
-            } else {
-                // Already in new format
-                $discountData[$discount['code']] = $discount;
-            }
-        }
-        $cart->update(['discount_data' => $discountData]);
-    }
-
-    return $cart->refresh();
-}
-
-function createTestDiscountData(string $code): array
-{
-    $defaultDiscounts = createDiscountConfig();
-
-    return $defaultDiscounts[$code] ?? [
-        'code' => $code,
-        'type' => 'fixed',
-        'value' => 10.0,
-        'conditions' => ['minimum_amount' => 50.0],
-    ];
-}
-
-function createDiscountConfig(array $discounts = []): array
-{
-    $defaultDiscounts = [
-        'SAVE10' => [
-            'code' => 'SAVE10',
-            'type' => 'fixed',
-            'value' => 10.0,
-            'conditions' => ['minimum_amount' => 50.0],
-        ],
-        'SAVE20' => [
-            'code' => 'SAVE20',
-            'type' => 'fixed',
-            'value' => 20.0,
-            'conditions' => ['minimum_amount' => 100.0],
-        ],
-        'PERCENT15' => [
-            'code' => 'PERCENT15',
-            'type' => 'percentage',
-            'value' => 15.0,
-            'conditions' => ['minimum_amount' => 75.0],
-        ],
-        'FREESHIP' => [
-            'code' => 'FREESHIP',
-            'type' => 'free_shipping',
-            'value' => 0.0,
-            'conditions' => [],
-        ],
-        'BOOKS20' => [
-            'code' => 'BOOKS20',
-            'type' => 'percentage',
-            'value' => 20.0,
-            'conditions' => [
-                'category' => 'books',
-                'minimum_amount' => 30.0,
-            ],
-        ],
-        'LAPTOP_BULK' => [
-            'code' => 'LAPTOP_BULK',
-            'type' => 'fixed',
-            'value' => 50.0,
-            'conditions' => [
-                'item_id' => 'laptop_pro',
-                'min_quantity' => 2,
-            ],
-        ],
-    ];
-
-    return array_merge($defaultDiscounts, $discounts);
-}

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Models\Cart;
 use AndreiLungeanu\SimpleCart\Services\CartService;
 
 describe('CartService - Dynamic Shipping', function () {
@@ -12,7 +13,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('can apply shipping with complete data', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $shippingData = [
             'method_name' => 'UPS Ground',
@@ -28,7 +29,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('can apply shipping with minimal required data', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $shippingData = [
             'method_name' => 'Standard Shipping',
@@ -42,7 +43,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('validates required shipping data fields', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         // Missing method_name
         expect(fn () => $this->cartService->applyShipping($cart, [
@@ -56,7 +57,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('validates shipping cost is numeric and non-negative', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         // Non-numeric cost
         expect(fn () => $this->cartService->applyShipping($cart, [
@@ -72,7 +73,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('accepts zero cost shipping', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $shippingData = [
             'method_name' => 'Free Shipping',
@@ -86,7 +87,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('accepts different numeric cost formats', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         // Integer
         $this->cartService->applyShipping($cart, [
@@ -114,7 +115,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('can remove shipping', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         // First apply shipping
         $this->cartService->applyShipping($cart, [
@@ -131,7 +132,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('can get applied shipping', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $shippingData = [
             'method_name' => 'FedEx Overnight',
@@ -146,7 +147,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('returns null when no shipping is applied', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $appliedShipping = $this->cartService->getAppliedShipping($cart);
 
@@ -154,7 +155,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('clears shipping data when cart is cleared', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
         $this->cartService->addItem($cart, [
             'product_id' => 'TEST-1',
             'name' => 'Test Product',
@@ -177,7 +178,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('includes shipping in cart calculations', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         $this->cartService->addItem($cart, [
             'product_id' => 'TEST-1',
@@ -204,7 +205,7 @@ describe('CartService - Dynamic Shipping', function () {
     });
 
     it('applies free shipping when threshold is met', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()->forUser(1)->create();
 
         // Add item that meets free shipping threshold ($100)
         $this->cartService->addItem($cart, [

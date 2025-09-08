@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AndreiLungeanu\SimpleCart\Data\CartConfiguration;
+use AndreiLungeanu\SimpleCart\Models\Cart;
 use AndreiLungeanu\SimpleCart\Models\CartItem;
 use AndreiLungeanu\SimpleCart\Services\Calculators\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\ShippingCalculator;
@@ -43,17 +44,15 @@ describe('DiscountCalculator', function () {
     });
 
     it('calculates fixed discount correctly', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->hasItems(1, [
+                'product_id' => 'TEST-PROD',
+                'name' => 'Test Product',
+                'price' => 60.00,
+                'quantity' => 1,
+            ])
+            ->create();
 
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'TEST-PROD',
-            'name' => 'Test Product',
-            'price' => 60.00,
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
 
         // Debug the subtotal
@@ -90,27 +89,16 @@ describe('DiscountCalculator', function () {
     });
 
     it('calculates percentage discount correctly', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->withDiscounts(['PERCENT15'])
+            ->hasItems(1, [
+                'product_id' => 'TEST-PROD',
+                'name' => 'Test Product',
+                'price' => 100.00, // Above $75 minimum
+                'quantity' => 1,
+            ])
+            ->create();
 
-        $discountData = [
-            'PERCENT15' => [
-                'code' => 'PERCENT15',
-                'type' => 'percentage',
-                'value' => 15.0,
-                'conditions' => ['minimum_amount' => 75.0],
-            ],
-        ];
-        $cart->update(['discount_data' => $discountData]);
-
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'TEST-PROD',
-            'name' => 'Test Product',
-            'price' => 100.00, // Above $75 minimum
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
@@ -118,27 +106,16 @@ describe('DiscountCalculator', function () {
     });
 
     it('respects minimum order requirements', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->withDiscounts(['SAVE20'])
+            ->hasItems(1, [
+                'product_id' => 'TEST-PROD',
+                'name' => 'Test Product',
+                'price' => 50.00, // Below $100 minimum
+                'quantity' => 1,
+            ])
+            ->create();
 
-        $discountData = [
-            'SAVE20' => [
-                'code' => 'SAVE20',
-                'type' => 'fixed',
-                'value' => 20.0,
-                'conditions' => ['minimum_amount' => 100.0],
-            ],
-        ];
-        $cart->update(['discount_data' => $discountData]);
-
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'TEST-PROD',
-            'name' => 'Test Product',
-            'price' => 50.00, // Below $100 minimum
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
@@ -146,21 +123,10 @@ describe('DiscountCalculator', function () {
     });
 
     it('handles free shipping discount type', function () {
-        $cart = createTestCart(1);
-        $cart->update(['shipping_data' => [
-            'method_name' => 'Standard Shipping',
-            'cost' => 5.99,
-        ]]); // Set shipping data first (new dynamic system)
-
-        $discountData = [
-            'FREESHIP' => [
-                'code' => 'FREESHIP',
-                'type' => 'free_shipping',
-                'value' => 0.0,
-                'conditions' => [],
-            ],
-        ];
-        $cart->update(['discount_data' => $discountData]);
+        $cart = Cart::factory()
+            ->withDiscounts(['FREESHIP'])
+            ->withShipping(['cost' => 5.99, 'method_name' => 'Standard Shipping'])
+            ->create();
 
         CartItem::create([
             'cart_id' => $cart->id,
@@ -178,31 +144,17 @@ describe('DiscountCalculator', function () {
     });
 
     it('handles category-based discounts', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->withDiscounts(['BOOKS20'])
+            ->hasItems(1, [
+                'product_id' => 'BOOK-1',
+                'name' => 'Laravel Book',
+                'price' => 45.00,
+                'quantity' => 1,
+                'category' => 'books',
+            ])
+            ->create();
 
-        $discountData = [
-            'BOOKS20' => [
-                'code' => 'BOOKS20',
-                'type' => 'percentage',
-                'value' => 20.0,
-                'conditions' => [
-                    'category' => 'books',
-                    'minimum_amount' => 30.0,
-                ],
-            ],
-        ];
-        $cart->update(['discount_data' => $discountData]);
-
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'BOOK-1',
-            'name' => 'Laravel Book',
-            'price' => 45.00,
-            'quantity' => 1,
-            'category' => 'books',
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
@@ -210,30 +162,16 @@ describe('DiscountCalculator', function () {
     });
 
     it('handles item-specific discounts', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->withDiscounts(['LAPTOP_BULK'])
+            ->hasItems(1, [
+                'product_id' => 'laptop_pro',
+                'name' => 'Gaming Laptop',
+                'price' => 999.00,
+                'quantity' => 2,
+            ])
+            ->create();
 
-        $discountData = [
-            'LAPTOP_BULK' => [
-                'code' => 'LAPTOP_BULK',
-                'type' => 'fixed',
-                'value' => 50.0,
-                'conditions' => [
-                    'item_id' => 'laptop_pro',
-                    'min_quantity' => 2,
-                ],
-            ],
-        ];
-        $cart->update(['discount_data' => $discountData]);
-
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'laptop_pro',
-            'name' => 'Laptop Pro',
-            'price' => 999.00,
-            'quantity' => 2, // Meets minimum quantity
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
@@ -241,17 +179,15 @@ describe('DiscountCalculator', function () {
     });
 
     it('returns zero when no discount data exists', function () {
-        $cart = createTestCart(1);
+        $cart = Cart::factory()
+            ->hasItems(1, [
+                'product_id' => 'TEST-PROD',
+                'name' => 'Test Product',
+                'price' => 100.00,
+                'quantity' => 1,
+            ])
+            ->create();
 
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'TEST-PROD',
-            'name' => 'Test Product',
-            'price' => 100.00,
-            'quantity' => 1,
-        ]);
-
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
@@ -259,8 +195,6 @@ describe('DiscountCalculator', function () {
     });
 
     it('cant discount more than subtotal', function () {
-        $cart = createTestCart(1);
-
         $discountData = [
             'SAVE20' => [
                 'code' => 'SAVE20',
@@ -269,17 +203,17 @@ describe('DiscountCalculator', function () {
                 'conditions' => [], // No minimum
             ],
         ];
-        $cart->update(['discount_data' => $discountData]);
 
-        CartItem::create([
-            'cart_id' => $cart->id,
-            'product_id' => 'TEST-PROD',
-            'name' => 'Test Product',
-            'price' => 15.00, // Less than $20 discount
-            'quantity' => 1,
-        ]);
+        $cart = Cart::factory()
+            ->state(['discount_data' => $discountData])
+            ->hasItems(1, [
+                'product_id' => 'TEST-PROD',
+                'name' => 'Test Product',
+                'price' => 15.00, // Less than $20 discount
+                'quantity' => 1,
+            ])
+            ->create();
 
-        $cart->refresh(['items']);
         $subtotal = $cart->subtotal;
         $discount = $this->calculator->calculate($cart, $subtotal);
 
