@@ -12,13 +12,13 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('session_id')->nullable()->index();
-            $table->string('tax_zone')->nullable();
-            $table->string('shipping_method')->nullable();
-            $table->json('discount_codes')->nullable();
+            $table->json('discount_data')->nullable();            
+            $table->json('shipping_data')->nullable();
+            $table->json('tax_data')->nullable();
             $table->json('metadata')->nullable();
             $table->string('status')->default('active'); // Using enum
-            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
+            $table->timestamp('expires_at')->nullable();            
             $table->softDeletes();
 
             $table->index(['user_id', 'created_at']);
