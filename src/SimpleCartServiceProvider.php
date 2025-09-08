@@ -33,7 +33,7 @@ class SimpleCartServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(
             CartConfiguration::class,
-            fn() => CartConfiguration::fromConfig(config('simple-cart', []))
+            fn () => CartConfiguration::fromConfig(config('simple-cart', []))
         );
 
         $this->app->singleton(CartService::class);

@@ -51,7 +51,7 @@ class DiscountCalculator
     {
         $conditions = $discountData['conditions'] ?? [];
 
-    // Minimum amount requirement
+        // Minimum amount requirement
         if (isset($conditions['minimum_amount'])) {
             $minimumAmount = (float) $conditions['minimum_amount'];
             if ($subtotal < $minimumAmount) {
@@ -59,7 +59,7 @@ class DiscountCalculator
             }
         }
 
-    // Minimum items requirement
+        // Minimum items requirement
         if (isset($conditions['min_items'])) {
             $totalItems = $cart->items->sum('quantity');
             if ($totalItems < $conditions['min_items']) {
@@ -72,7 +72,7 @@ class DiscountCalculator
 
     private function validateItemConditions(array $conditions, Cart $cart): bool
     {
-    // Specific item
+        // Specific item
         if (isset($conditions['item_id'])) {
             $item = $cart->items->where('product_id', $conditions['item_id'])->first();
 

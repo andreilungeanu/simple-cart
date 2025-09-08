@@ -15,14 +15,14 @@ class TaxCalculator
             return 0.0;
         }
 
-    // Item tax with priority-based rates
+        // Item tax with priority-based rates
         $itemTax = $cart->items->sum(function ($item) use ($taxData) {
             $rate = $this->resolveItemTaxRate($item, $taxData);
 
             return ($item->price * $item->quantity) * $rate;
         });
 
-    // Shipping tax if applicable
+        // Shipping tax if applicable
         $shippingTax = 0;
         if (($taxData['apply_to_shipping'] ?? false) && $shipping > 0) {
             $shippingRate = $taxData['shipping_rate'] ?? $taxData['rate'] ?? 0;
@@ -39,12 +39,12 @@ class TaxCalculator
             return 0.0;
         }
 
-    // Specific product ID
+        // Specific product ID
         if ($productId) {
             return $taxData['conditions']['rates_per_item'][$productId] ?? $taxData['rate'] ?? 0.0;
         }
 
-    // Category
+        // Category
         if ($category) {
             return $taxData['conditions']['rates_per_category'][$category] ?? $taxData['rate'] ?? 0.0;
         }
@@ -56,22 +56,22 @@ class TaxCalculator
     {
         $conditions = $taxData['conditions'] ?? [];
 
-    // Priority 1: Item-specific
+        // Priority 1: Item-specific
         if (isset($conditions['rates_per_item'][$item->product_id])) {
             return $conditions['rates_per_item'][$item->product_id];
         }
 
-    // Priority 2: Category-specific
+        // Priority 2: Category-specific
         if ($item->category && isset($conditions['rates_per_category'][$item->category])) {
             return $conditions['rates_per_category'][$item->category];
         }
 
-    // Priority 3: Type-specific (from metadata)
+        // Priority 3: Type-specific (from metadata)
         if (isset($item->metadata['type']) && isset($conditions['rates_per_type'][$item->metadata['type']])) {
             return $conditions['rates_per_type'][$item->metadata['type']];
         }
 
-    // Priority 4: Default
+        // Priority 4: Default
         return $taxData['rate'] ?? 0.0;
     }
 }
