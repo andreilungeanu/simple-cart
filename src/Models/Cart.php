@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AndreiLungeanu\SimpleCart\Models;
 
 use AndreiLungeanu\SimpleCart\Enums\CartStatusEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -78,5 +79,88 @@ class Cart extends Model
     public function getItemCountAttribute(): int
     {
         return $this->items->sum('quantity');
+    }
+
+    /**
+     * Scope to filter active carts
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('status', CartStatusEnum::Active);
+    }
+
+    /**
+     * Scope to filter abandoned carts
+     */
+    public function scopeAbandoned(Builder $query): void
+    {
+        $query->where('status', CartStatusEnum::Abandoned);
+    }
+
+    /**
+     * Scope to filter expired carts
+     */
+    public function scopeExpired(Builder $query): void
+    {
+        $query->where('status', CartStatusEnum::Expired);
+    }
+
+    /**
+     * Scope to filter carts that have not expired by status
+     */
+    public function scopeNotExpired(Builder $query): void
+    {
+        $query->where('status', '!=', CartStatusEnum::Expired);
+    }
+
+    /**
+     * Scope to filter carts that have not expired by date yet
+     */
+    public function scopeNotExpiredByDate(Builder $query): void
+    {
+        $query->where(function ($q) {
+            $q->whereNull('expires_at')
+                ->orWhere('expires_at', '>', now());
+        });
+    }
+
+    /**
+     * Scope to filter carts that expired before a given date
+     */
+    public function scopeExpiredBefore(Builder $query, $date): void
+    {
+        $query->where('expires_at', '<', $date);
+    }
+
+    /**
+     * Scope to filter empty carts (no items)
+     */
+    public function scopeEmpty(Builder $query): void
+    {
+        $query->whereDoesntHave('items');
+    }
+
+    /**
+     * Scope to filter carts for a specific user
+     */
+    public function scopeForUser(Builder $query, $userId): void
+    {
+        $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope to filter carts for a specific session
+     */
+    public function scopeForSession(Builder $query, $sessionId): void
+    {
+        $query->where('session_id', $sessionId);
+    }
+
+    /**
+     * Scope to filter carts older than specified days
+     */
+    public function scopeOlderThan(Builder $query, int $days): void
+    {
+        $query->where('updated_at', '<', now()->subDays($days));
     }
 }

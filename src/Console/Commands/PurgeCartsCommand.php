@@ -26,8 +26,8 @@ class PurgeCartsCommand extends Command
 
         $expiredDate = now()->subDays($days);
 
-        $expiredCartsQuery = Cart::where('expires_at', '<', now())
-            ->where('status', '!=', CartStatusEnum::Expired);
+        $expiredCartsQuery = Cart::expiredBefore(now())
+            ->notExpired();
 
         $expiredCount = $expiredCartsQuery->count();
 
@@ -40,7 +40,7 @@ class PurgeCartsCommand extends Command
             }
         }
 
-        $oldCartsQuery = Cart::where('updated_at', '<', $expiredDate)
+        $oldCartsQuery = Cart::olderThan($days)
             ->whereIn('status', [CartStatusEnum::Expired, CartStatusEnum::Abandoned]);
 
         $oldCount = $oldCartsQuery->count();
@@ -57,9 +57,9 @@ class PurgeCartsCommand extends Command
             }
         }
 
-        $emptyCartsQuery = Cart::whereDoesntHave('items')
+        $emptyCartsQuery = Cart::empty()
             ->where('created_at', '<', now()->subDays(1))
-            ->where('status', CartStatusEnum::Active);
+            ->active();
 
         $emptyCount = $emptyCartsQuery->count();
 
