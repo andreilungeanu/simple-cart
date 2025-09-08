@@ -65,7 +65,7 @@
                 "AndreiLungeanu\\SimpleCart\\SimpleCartServiceProvider"
             ],
             "aliases": {
-                "SimpleCart": "AndreiLungeanu\\SimpleCart\\Cart\\Facades\\SimpleCart"
+                "Cart": "AndreiLungeanu\\SimpleCart\\Facades\\Cart"
             }
         }
     },
