@@ -40,7 +40,7 @@ describe('DiscountCalculator', function () {
 
         $this->config = CartConfiguration::fromConfig($testConfig);
         $this->shippingCalculator = new ShippingCalculator($this->config);
-        $this->calculator = new DiscountCalculator($this->config, $this->shippingCalculator);
+        $this->calculator = new DiscountCalculator($this->config);
     });
 
     it('calculates fixed discount correctly', function () {
@@ -218,5 +218,136 @@ describe('DiscountCalculator', function () {
         $discount = $this->calculator->calculate($cart, $subtotal);
 
         expect($discount)->toBe(15.0); // Should cap at subtotal, not exceed it
+    });
+
+    it('applies percentage discount with unit cap for specific item', function () {
+        $discountData = [
+            'CAP50' => [
+                'code' => 'CAP50',
+                'type' => 'percentage',
+                'value' => 50.0,
+                'conditions' => [
+                    'item_id' => 'prod_123',
+                    'min_quantity' => 2,
+                    'max_discounted_units' => 1,
+                ],
+            ],
+        ];
+
+        $cart = Cart::factory()
+            ->state(['discount_data' => $discountData])
+            ->hasItems(1, [
+                'product_id' => 'prod_123',
+                'name' => 'Test Product',
+                'price' => 100.00,
+                'quantity' => 2,
+            ])
+            ->create();
+
+        $subtotal = $cart->subtotal; // 200
+        $discount = $this->calculator->calculate($cart, $subtotal);
+
+        // 50% off up to 1 unit at $100 => $50
+        expect($discount)->toBe(50.0);
+    });
+
+    it('applies cap to cheapest eligible units in category (percentage)', function () {
+        $discountData = [
+            'SHOES50' => [
+                'code' => 'SHOES50',
+                'type' => 'percentage',
+                'value' => 50.0,
+                'conditions' => [
+                    'category' => 'shoes',
+                    'min_quantity' => 2,
+                    'max_discounted_units' => 1,
+                ],
+            ],
+        ];
+
+        $cart = Cart::factory()
+            ->state(['discount_data' => $discountData])
+            ->hasItems(1, [
+                'product_id' => 'shoe_low',
+                'name' => 'Shoe Low',
+                'price' => 80.00,
+                'quantity' => 1,
+                'category' => 'shoes',
+            ])
+            ->hasItems(1, [
+                'product_id' => 'shoe_high',
+                'name' => 'Shoe High',
+                'price' => 120.00,
+                'quantity' => 1,
+                'category' => 'shoes',
+            ])
+            ->create();
+
+        $subtotal = $cart->subtotal; // 200
+        $discount = $this->calculator->calculate($cart, $subtotal);
+
+        // Cap 1 unit -> choose cheapest ($80) * 50% = $40
+        expect($discount)->toBe(40.0);
+    });
+
+    it('caps fixed discount by capped units subtotal', function () {
+        $discountData = [
+            'FIXED60' => [
+                'code' => 'FIXED60',
+                'type' => 'fixed',
+                'value' => 60.0,
+                'conditions' => [
+                    'item_id' => 'prod_123',
+                    'min_quantity' => 1,
+                    'max_discounted_units' => 1,
+                ],
+            ],
+        ];
+
+        $cart = Cart::factory()
+            ->state(['discount_data' => $discountData])
+            ->hasItems(1, [
+                'product_id' => 'prod_123',
+                'name' => 'Item A',
+                'price' => 30.00,
+                'quantity' => 2,
+            ])
+            ->create();
+
+        $subtotal = $cart->subtotal; // 60
+        $discount = $this->calculator->calculate($cart, $subtotal);
+
+        // Cap 1 unit -> capped subtotal $30; fixed 60 should cap at 30
+        expect($discount)->toBe(30.0);
+    });
+
+    it('without unit cap applies to all eligible items', function () {
+        $discountData = [
+            'HALFALL' => [
+                'code' => 'HALFALL',
+                'type' => 'percentage',
+                'value' => 50.0,
+                'conditions' => [
+                    'item_id' => 'prod_123',
+                    'min_quantity' => 2,
+                ],
+            ],
+        ];
+
+        $cart = Cart::factory()
+            ->state(['discount_data' => $discountData])
+            ->hasItems(1, [
+                'product_id' => 'prod_123',
+                'name' => 'Test Product',
+                'price' => 100.00,
+                'quantity' => 2,
+            ])
+            ->create();
+
+        $subtotal = $cart->subtotal; // 200
+        $discount = $this->calculator->calculate($cart, $subtotal);
+
+        // No cap -> 50% of entire eligible subtotal ($200) = $100
+        expect($discount)->toBe(100.0);
     });
 });

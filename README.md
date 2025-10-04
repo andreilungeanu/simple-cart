@@ -12,7 +12,7 @@
 
 ## 🎯 Features
 - ✅ **Event-Driven Design** - Comprehensive listeners for cart lifecycle events
-- ✅ **Advanced Calculations** - Dynamic tax system, flexible shipping, comprehensive discounts
+- ✅ **Advanced Calculations** - Dynamic tax system, flexible shipping, flexible discount system (fixed, percentage, free shipping with conditional logic)
 - ✅ **Multiple Cart Instances** - Proper user/session isolation and state management
 - ✅ **Service-Based API** - Clean service layer for cart operations
 - ✅ **Database Persistence** - Reliable storage with automatic expiration handling
@@ -142,7 +142,7 @@ All cart operations dispatch events for:
 For comprehensive documentation including:
 - **Detailed API reference** with all methods and parameters
 - **Advanced tax scenarios** (EU VAT, US State tax, API integration)
-- **Complex discount rules** (BOGO, volume discounts, loyalty programs)
+- **Conditional discount patterns** (percentage, fixed amount, free shipping; quantity/amount conditions)
 - **Event handling examples** (analytics, inventory, notifications)
 - **Performance optimization** tips and caching strategies
 - **Security best practices** and error handling
