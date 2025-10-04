@@ -17,16 +17,15 @@ class TaxCalculator
 
         // Item tax with priority-based rates
         $itemTax = $cart->items->sum(function ($item) use ($taxData) {
-            $rate = $this->resolveItemTaxRate($item, $taxData);
-
+            $rate = (float) $this->resolveItemTaxRate($item, $taxData);
             return ($item->price * $item->quantity) * $rate;
         });
 
         // Shipping tax if applicable
         $shippingTax = 0;
         if (($taxData['apply_to_shipping'] ?? false) && $shipping > 0) {
-            $shippingRate = $taxData['shipping_rate'] ?? $taxData['rate'] ?? 0;
-            $shippingTax = $shipping * $shippingRate;
+            $shippingRate = (float) ($taxData['shipping_rate'] ?? $taxData['rate'] ?? 0);
+            $shippingTax = (float) $shipping * $shippingRate;
         }
 
         return round($itemTax + $shippingTax, 2);

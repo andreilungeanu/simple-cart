@@ -276,7 +276,11 @@ class CartService
             }
         }
 
-        if ($itemData['price'] < 0) {
+        if (! is_numeric($itemData['price'])) {
+            throw new CartException('Price must be a number');
+        }
+
+        if ((float) $itemData['price'] < 0) {
             throw new CartException('Price cannot be negative');
         }
 
