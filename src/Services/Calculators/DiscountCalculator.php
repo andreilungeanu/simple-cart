@@ -37,11 +37,6 @@ class DiscountCalculator
             if (! $this->config->allowDiscountStacking) {
                 break;
             }
-
-            // Enforce max discount codes limit
-            if ($appliedDiscounts >= $this->config->maxDiscountCodes) {
-                break;
-            }
         }
 
         return min($totalDiscount, $subtotal);
