@@ -16,4 +16,8 @@ return [
         'allow_stacking' => env('CART_ALLOW_DISCOUNT_STACKING', false),
         'max_discount_codes' => env('CART_MAX_DISCOUNT_CODES', 3),
    ],
+
+   // Behavior when a user logs in and both a guest cart (session) and a user cart exist.
+   // Options: 'merge' (default), 'guest' (keep guest cart), 'user' (keep user cart)
+   'login_cart_strategy' => env('CART_ON_LOGIN_CART_STRATEGY', 'merge'),
 ];

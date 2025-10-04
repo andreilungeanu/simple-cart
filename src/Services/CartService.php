@@ -13,6 +13,7 @@ use AndreiLungeanu\SimpleCart\Models\CartItem;
 use AndreiLungeanu\SimpleCart\Services\Calculators\DiscountCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\ShippingCalculator;
 use AndreiLungeanu\SimpleCart\Services\Calculators\TaxCalculator;
+use Illuminate\Support\Facades\DB;
 
 class CartService
 {
@@ -51,6 +52,190 @@ class CartService
         }
 
         return $cart;
+    }
+
+    /**
+     * Find the latest active, non-expired cart for a given user.
+     */
+    public function findActiveCartForUser(int $userId): ?Cart
+    {
+        return Cart::with('items')
+            ->active()
+            ->notExpiredByDate()
+            ->forUser($userId)
+            ->latest('updated_at')
+            ->first();
+    }
+
+    /**
+     * Find the latest active, non-expired cart for a given session.
+     */
+    public function findActiveCartForSession(string $sessionId): ?Cart
+    {
+        return Cart::with('items')
+            ->active()
+            ->notExpiredByDate()
+            ->forSession($sessionId)
+            ->latest('updated_at')
+            ->first();
+    }
+
+    /**
+     * Merge a guest (session) cart into the user's cart on login.
+     *
+     * Rules:
+     * - If only a guest cart exists: assign it to the user and refresh TTL.
+     * - If only a user cart exists: nothing to do, return it.
+     * - If both exist: combine items by product_id (sum quantities),
+     *   keep user's item attributes (name/price/category/metadata) when conflict.
+     *   Merge discount codes prioritizing user's codes and respecting maxDiscountCodes.
+     *   Preserve user's shipping/tax data; otherwise take guest's.
+     *   Delete the guest cart afterward.
+     *
+     * Emits CartUpdated with action 'merged' on the resulting cart.
+     */
+    public function mergeOnLogin(int $userId, ?string $sessionId = null): ?Cart
+    {
+        $userCart = $this->findActiveCartForUser($userId);
+        $guestCart = $sessionId ? $this->findActiveCartForSession($sessionId) : null;
+
+        // Nothing to merge
+        if (! $guestCart && ! $userCart) {
+            return null;
+        }
+
+        // If only guest cart exists, claim it for the user
+        if ($guestCart && ! $userCart) {
+            $guestCart->update([
+                'user_id' => $userId,
+                'expires_at' => now()->addDays($this->config->ttlDays),
+            ]);
+
+            event(new CartUpdated($guestCart->fresh(['items']), 'merged', [
+                'from_cart_id' => $guestCart->id,
+                'strategy' => 'claimed_guest',
+            ]));
+
+            return $guestCart;
+        }
+
+        // If only user cart exists, nothing to do
+        if ($userCart && ! $guestCart) {
+            return $userCart;
+        }
+
+        // Both carts exist -> apply configured strategy
+        if (! $userCart || ! $guestCart) {
+            // Safety guard (should not happen due to above conditions)
+            return $userCart ?? $guestCart;
+        }
+
+        // Avoid self-merge if somehow same cart (shouldn't happen)
+        if ($userCart->id === $guestCart->id) {
+            return $userCart;
+        }
+
+        $strategy = strtolower($this->config->onLoginCartStrategy);
+
+        if ($strategy === 'user') {
+            // Keep user cart, drop guest cart
+            $fromCartId = $guestCart->id;
+            $guestCart->delete();
+
+            event(new CartUpdated($userCart->fresh(['items']), 'merged', [
+                'from_cart_id' => $fromCartId,
+                'strategy' => 'keep_user',
+            ]));
+
+            return $userCart;
+        }
+
+        if ($strategy === 'guest') {
+            // Keep guest cart: assign it to user, delete existing user cart
+            $fromCartId = $userCart->id;
+
+            DB::transaction(function () use ($userCart, $guestCart, $userId) {
+                $guestCart->update([
+                    'user_id' => $userId,
+                    'expires_at' => now()->addDays($this->config->ttlDays),
+                ]);
+                $userCart->delete();
+            });
+
+            $claimed = $guestCart->fresh(['items']);
+            event(new CartUpdated($claimed, 'merged', [
+                'from_cart_id' => $fromCartId,
+                'strategy' => 'keep_guest',
+            ]));
+
+            return $claimed;
+        }
+
+        // Default: merge guest into user
+        $resultCart = DB::transaction(function () use ($userCart, $guestCart) {
+            $userCart->loadMissing('items');
+            $guestCart->loadMissing('items');
+
+            $guestItems = $guestCart->items;
+            $userItemsByProduct = $userCart->items->keyBy('product_id');
+
+            // Merge items: sum quantities on product_id, keep user's item attributes
+            foreach ($guestItems as $gItem) {
+                $uItem = $userItemsByProduct->get($gItem->product_id);
+                if ($uItem) {
+                    // Sum quantities
+                    $uItem->update(['quantity' => $uItem->quantity + $gItem->quantity]);
+                } else {
+                    // Create new item on user cart with guest item attributes
+                    CartItem::create([
+                        'cart_id' => $userCart->id,
+                        'product_id' => $gItem->product_id,
+                        'name' => $gItem->name,
+                        'price' => (float) $gItem->price,
+                        'quantity' => $gItem->quantity,
+                        'category' => $gItem->category,
+                        'metadata' => $gItem->metadata ?? [],
+                    ]);
+                }
+            }
+
+            // Merge discount codes with priority to user's existing codes
+            $userDiscounts = $userCart->discount_data ?? [];
+            $guestDiscounts = $guestCart->discount_data ?? [];
+            $mergedDiscounts = $userDiscounts;
+            foreach ($guestDiscounts as $code => $data) {
+                if (! isset($mergedDiscounts[$code]) && count($mergedDiscounts) < $this->config->maxDiscountCodes) {
+                    $mergedDiscounts[$code] = $data;
+                }
+            }
+
+            // Shipping/Tax precedence
+            $shipping = $userCart->shipping_data ?? $guestCart->shipping_data;
+            $tax = $userCart->tax_data ?? $guestCart->tax_data;
+
+            // Update user cart with merged side-data and refreshed TTL
+            $userCart->update([
+                'discount_data' => $mergedDiscounts ?: [],
+                'shipping_data' => $shipping,
+                'tax_data' => $tax,
+                'expires_at' => now()->addDays($this->config->ttlDays),
+            ]);
+
+            // Remove guest cart
+            $fromCartId = $guestCart->id;
+            $guestCart->delete();
+
+            return [$userCart->fresh(['items']), $fromCartId];
+        });
+
+        [$finalCart, $fromCartId] = $resultCart;
+
+        event(new CartUpdated($finalCart, 'merged', [
+            'from_cart_id' => $fromCartId,
+            'strategy' => 'guest_into_user',
+        ]));
+
+        return $finalCart;
     }
 
     public function addItem(Cart $cart, array $itemData): CartItem
