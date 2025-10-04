@@ -1102,15 +1102,17 @@ function applyUsTax(Cart $cart, string $state, string $county = null): void
 
 ### Advanced Discount Scenarios
 
+> Note: The following “quantity-threshold” examples apply a discount to all eligible units once the condition is met. True BOGO (discounting only specific units, like every second/cheapest item) is not supported out of the box and requires custom logic.
+
 ```php
-// BOGO (Buy One Get One) Discount
+// Quantity-threshold category discount (not true BOGO)
 Cart::applyDiscount($cart, [
-    'code' => 'BOGO_SHOES',
+    'code' => 'SHOES_50_OFF_2PLUS',
     'type' => 'percentage',
-    'value' => 50, // 50% off when buying 2+
+    'value' => 50, // 50% off all shoes when buying 2+ in category
     'conditions' => [
         'category' => 'shoes',
-        'min_quantity' => 2
+        'min_quantity' => 2,
     ]
 ]);
 
