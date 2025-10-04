@@ -57,10 +57,8 @@ class CartService
     {
         $this->validateItemData($itemData);
 
-        $cart->loadMissing('items');
-
-        $existingItem = $cart->items->firstWhere('product_id', $itemData['product_id']);
-        $newQuantity = ($existingItem?->quantity ?? 0) + ($itemData['quantity'] ?? 1);
+        $existingItem = $cart->items()->where('product_id', $itemData['product_id'])->first();
+        $newQuantity = ($existingItem->quantity ?? 0) + ($itemData['quantity'] ?? 1);
 
         /** @var CartItem $item */
         $item = $cart->items()->updateOrCreate(

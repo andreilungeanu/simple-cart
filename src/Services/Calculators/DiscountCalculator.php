@@ -118,6 +118,20 @@ class DiscountCalculator
         }
 
         $targetItems = $this->getTargetItems($cart, $conditions);
+
+        // Optional cap on how many units can be discounted (cheapest-first across eligible items)
+        $unitCap = (int) ($conditions['max_discounted_units'] ?? 0);
+
+        if ($unitCap > 0) {
+            $cappedSubtotal = $this->subtotalForUnitCap($targetItems, $unitCap);
+
+            return match ($type) {
+                'fixed' => min($value, $cappedSubtotal),
+                'percentage' => $cappedSubtotal * ($value / 100),
+                default => 0.0,
+            };
+        }
+
         $targetSubtotal = $targetItems->sum(function ($item) {
             return $item->getLineTotal();
         });
@@ -127,6 +141,42 @@ class DiscountCalculator
             'percentage' => $targetSubtotal * ($value / 100),
             default => 0.0,
         };
+    }
+
+    /**
+     * Compute subtotal of up to N cheapest units across the given items.
+     * Caps discounted units and picks cheapest units first among eligible items.
+     */
+    private function subtotalForUnitCap($items, int $unitCap): float
+    {
+        if ($unitCap <= 0) {
+            return 0.0;
+        }
+
+        $remaining = $unitCap;
+        $subtotal = 0.0;
+
+        // Sort eligible items by unit price ascending to discount cheapest units first
+        $sorted = $items->sortBy(fn ($item) => (float) $item->price)->values();
+
+        foreach ($sorted as $item) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $qty = (int) $item->quantity;
+            $price = (float) $item->price;
+
+            if ($qty <= 0 || $price <= 0.0) {
+                continue;
+            }
+
+            $take = min($qty, $remaining);
+            $subtotal += $price * $take;
+            $remaining -= $take;
+        }
+
+        return $subtotal;
     }
 
     private function getTargetItems(Cart $cart, array $conditions)
