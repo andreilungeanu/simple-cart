@@ -12,6 +12,7 @@ readonly class CartConfiguration
         public array $discounts,
         public bool $allowDiscountStacking = false,
         public int $maxDiscountCodes = 3,
+        public string $onLoginCartStrategy = 'merge',
     ) {}
 
     public static function fromConfig(array $config): self
@@ -33,6 +34,8 @@ readonly class CartConfiguration
             discounts: $config['discounts']['codes'] ?? [],
             allowDiscountStacking: $config['discounts']['allow_stacking'] ?? false,
             maxDiscountCodes: $config['discounts']['max_discount_codes'] ?? 3,
+            onLoginCartStrategy: $config['login_cart_strategy']
+                ?? ($config['login']['on_login_cart_strategy'] ?? 'merge'),
         );
     }
 }
