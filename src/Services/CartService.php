@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AndreiLungeanu\SimpleCart\Services;
 
 use AndreiLungeanu\SimpleCart\Data\CartConfiguration;
+use AndreiLungeanu\SimpleCart\Data\ValidationResult;
 use AndreiLungeanu\SimpleCart\Enums\CartStatusEnum;
 use AndreiLungeanu\SimpleCart\Events\CartUpdated;
 use AndreiLungeanu\SimpleCart\Exceptions\CartException;
+use AndreiLungeanu\SimpleCart\Exceptions\CartValidationException;
 use AndreiLungeanu\SimpleCart\Models\Cart;
 use AndreiLungeanu\SimpleCart\Models\CartItem;
 use AndreiLungeanu\SimpleCart\Services\Calculators\DiscountCalculator;
@@ -512,5 +514,111 @@ class CartService
                 }
             }
         }
+    }
+
+    /**
+     * Validate cart against an array of validators.
+     *
+     * Validators can be:
+     * - Class names (resolved from container)
+     * - Instances of invokable classes
+     * - Closures
+     *
+     * Each validator receives (Cart $cart, Closure $next) and should either:
+     * - Call $next($cart) to pass validation
+     * - Throw CartValidationException to fail validation
+     *
+     * @param  Cart  $cart  The cart to validate
+     * @param  array<int, callable|class-string>  $validators  Array of validator class names, instances, or closures
+     * @return ValidationResult
+     */
+    public function validateForCheckout(Cart $cart, array $validators = []): ValidationResult
+    {
+        if (empty($validators)) {
+            return ValidationResult::success(['validators_count' => 0]);
+        }
+
+        $errors = [];
+        $passed = [];
+        $failed = [];
+
+        foreach ($validators as $validator) {
+            try {
+                $instance = is_string($validator) ? app($validator) : $validator;
+                $name = $this->getValidatorName($instance, $validator);
+
+                // Execute validator - it should call $next or throw
+                $this->executeValidator($instance, $cart);
+
+                $passed[] = $name;
+            } catch (CartValidationException $e) {
+                $errors[] = [
+                    'validator' => $e->validator,
+                    'message' => $e->getMessage(),
+                    'context' => $e->context,
+                ];
+                $failed[] = $e->validator;
+            }
+        }
+
+        if (! empty($errors)) {
+            return ValidationResult::failed(
+                message: $errors[0]['message'],
+                errors: array_column($errors, 'message'),
+                metadata: [
+                    'validators_run' => count($validators),
+                    'validators_passed' => $passed,
+                    'validators_failed' => $failed,
+                    'error_details' => $errors,
+                ]
+            );
+        }
+
+        return ValidationResult::success([
+            'validators_run' => count($validators),
+            'validators_passed' => $passed,
+        ]);
+    }
+
+    /**
+     * Execute a single validator.
+     *
+     * @param  callable|object  $validator
+     * @param  Cart  $cart
+     */
+    private function executeValidator(callable|object $validator, Cart $cart): void
+    {
+        // Create a no-op "next" closure
+        $next = fn (Cart $c) => $c;
+
+        if (is_object($validator) && method_exists($validator, 'handle')) {
+            $validator->handle($cart, $next);
+        } else {
+            $validator($cart, $next);
+        }
+    }
+
+    /**
+     * Get a readable name for the validator.
+     *
+     * @param  mixed  $instance
+     * @param  mixed  $original
+     * @return string
+     */
+    private function getValidatorName(mixed $instance, mixed $original): string
+    {
+        if (is_object($instance) && method_exists($instance, 'getName')) {
+            return $instance->getName();
+        }
+
+        if (is_string($original)) {
+            return class_basename($original);
+        }
+
+        if (is_object($instance)) {
+            return class_basename($instance);
+        }
+
+        return 'closure';
     }
 }

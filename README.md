@@ -113,6 +113,13 @@ $summary = Cart::getCartSummary($cart);
 */
 ```
 
+### Cart merge stratery on login
+
+When a user logs in and both a guest session cart and a user cart exist, you can control behavior via `login_cart_strategy` (env: `CART_ON_LOGIN_CART_STRATEGY`). Options: `merge` (default), `guest`, `user`.
+
+For details, see the documentation section “Cart Merge Strategy on Login”.
+
+
 ## 🔧 Key Features Overview
 
 ### Dynamic Tax System
@@ -179,7 +186,6 @@ php artisan simple-cart:cleanup
 # Scheduled cleanup (add to Kernel.php)
 $schedule->command('simple-cart:cleanup --force')->daily();
 ```
-
 
 ## 📄 License
 

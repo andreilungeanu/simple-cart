@@ -13,7 +13,8 @@
 9. [Events](#events)
 10. [Commands](#commands)
 11. [Exceptions](#exceptions)
-12. [Usage Examples](#usage-examples)
+12. [Cart Validation](#cart-validation)
+13. [Usage Examples](#usage-examples)
 13. [Best Practices](#best-practices)
 14. [Performance Considerations](#performance-considerations)
 
@@ -430,8 +431,30 @@ return [
         'allow_stacking' => env('CART_ALLOW_DISCOUNT_STACKING', false),
         'max_discount_codes' => env('CART_MAX_DISCOUNT_CODES', 3),
     ],
+    // Behavior when user logs in and both guest+user carts exist
+    // Options: 'merge' (default), 'guest' (keep guest cart), 'user' (keep user cart)
+    'login_cart_strategy' => env('CART_ON_LOGIN_CART_STRATEGY', 'merge'),
 ];
 ```
+
+### Cart Merge Strategy on Login
+
+When a user authenticates, you may have both a guest cart (session) and an existing user cart.
+Control the behavior via `simple-cart.login_cart_strategy`:
+
+- `merge` (default): Merge guest into user (quantities summed by product_id, user attributes preserved). Guest cart is deleted.
+- `guest`: Keep the guest cart, assign it to the user, and delete the pre-existing user cart.
+- `user`: Keep the existing user cart and delete the guest cart.
+
+Hook into your app’s login flow and call:
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\Cart;
+
+Cart::mergeOnLogin(auth()->id(), session()->getId());
+```
+
+The service emits a `CartUpdated` event with `action = 'merged'` and metadata describing the strategy.
 
 ### Environment Variables
 
@@ -986,6 +1009,271 @@ try {
     // Handle general exceptions
     return response()->json(['error' => 'An error occurred'], 500);
 }
+```
+
+## Cart Validation
+
+The package provides a flexible validation system to check cart business rules before checkout.
+
+### Basic Usage
+
+Validate a cart before checkout using custom validators:
+
+```php
+use AndreiLungeanu\SimpleCart\Facades\Cart;
+use AndreiLungeanu\SimpleCart\Exceptions\CartValidationException;
+
+$result = Cart::validateForCheckout($cart, [
+    MinimumOrderValidator::class,
+    MaxQuantityValidator::class,
+    ShippingRequiredValidator::class,
+]);
+
+if ($result->hasFailed()) {
+    // Handle validation failure
+    return back()->withErrors(['cart' => $result->getMessage()]);
+}
+
+// All validations passed - proceed with checkout
+```
+
+### Creating Validators
+
+Validators are simple invokable classes. No interface required:
+
+```php
+<?php
+
+namespace App\Cart\Validators;
+
+use Closure;
+use AndreiLungeanu\SimpleCart\Models\Cart;
+use AndreiLungeanu\SimpleCart\Exceptions\CartValidationException;
+
+class MinimumOrderValidator
+{
+    public function __construct(private float $minimum = 25.00) {}
+    
+    public function __invoke(Cart $cart, Closure $next): Cart
+    {
+        if ($cart->subtotal < $this->minimum) {
+            throw new CartValidationException(
+                message: "Minimum order amount is \${$this->minimum}",
+                validator: 'minimum_order',
+                context: ['current' => $cart->subtotal, 'required' => $this->minimum]
+            );
+        }
+        
+        return $next($cart);
+    }
+    
+    // Optional: provide a name for debugging
+    public function getName(): string
+    {
+        return 'minimum_order';
+    }
+}
+```
+
+### Validator with handle() Method
+
+You can also use a `handle()` method instead of `__invoke()`:
+
+```php
+class MaxQuantityValidator
+{
+    public function __construct(private int $maxPerItem = 10) {}
+    
+    public function handle(Cart $cart, Closure $next): Cart
+    {
+        foreach ($cart->items as $item) {
+            if ($item->quantity > $this->maxPerItem) {
+                throw new CartValidationException(
+                    "Maximum {$this->maxPerItem} units per item",
+                    'max_quantity',
+                    ['item' => $item->name, 'quantity' => $item->quantity]
+                );
+            }
+        }
+        
+        return $next($cart);
+    }
+}
+```
+
+### ValidationResult API
+
+The `validateForCheckout()` method returns a `ValidationResult` object:
+
+```php
+$result = Cart::validateForCheckout($cart, $validators);
+
+// Check if validation passed
+$result->isValid();      // bool - true if all validators passed
+$result->hasFailed();    // bool - true if any validator failed
+
+// Get error information
+$result->getMessage();   // ?string - first error message
+$result->getErrors();    // array - all error messages
+
+// Get debugging metadata
+$result->getMetadata();  // array - passed/failed validators, error details
+
+// Convert to array
+$result->toArray();      // ['is_valid' => bool, 'message' => ?string, 'errors' => [], 'metadata' => []]
+```
+
+### Different Validators for Different Flows
+
+```php
+// Standard checkout - full validation
+$result = Cart::validateForCheckout($cart, [
+    MinimumOrderValidator::class,
+    MaxQuantityValidator::class,
+    ShippingRequiredValidator::class,
+    InventoryValidator::class,
+]);
+
+// Express checkout - fewer validations
+$result = Cart::validateForCheckout($cart, [
+    MinimumOrderValidator::class,
+]);
+
+// B2B checkout - different rules
+$result = Cart::validateForCheckout($cart, [
+    WholesaleMinimumValidator::class,
+    CaseQuantityValidator::class,
+    ApprovedBuyerValidator::class,
+]);
+```
+
+### Validators with Dependency Injection
+
+Validators are resolved from the container, so you can use dependency injection:
+
+```php
+class InventoryValidator
+{
+    public function __construct(private InventoryService $inventory) {}
+    
+    public function __invoke(Cart $cart, Closure $next): Cart
+    {
+        foreach ($cart->items as $item) {
+            $available = $this->inventory->getAvailable($item->product_id);
+            
+            if ($item->quantity > $available) {
+                throw new CartValidationException(
+                    "Only {$available} units of {$item->name} available",
+                    'inventory',
+                    ['product_id' => $item->product_id, 'available' => $available]
+                );
+            }
+        }
+        
+        return $next($cart);
+    }
+}
+```
+
+### Using Closures as Validators
+
+For simple one-off validations, you can use closures:
+
+```php
+$result = Cart::validateForCheckout($cart, [
+    // Closure validator
+    function (Cart $cart, Closure $next) {
+        if ($cart->isEmpty()) {
+            throw new CartValidationException('Cart is empty', 'empty_cart');
+        }
+        return $next($cart);
+    },
+    
+    // Class validator
+    MinimumOrderValidator::class,
+]);
+```
+
+### Handling Validation Errors
+
+The validation service collects ALL errors from all validators:
+
+```php
+$result = Cart::validateForCheckout($cart, $validators);
+
+if ($result->hasFailed()) {
+    // Get all error messages
+    $errors = $result->getErrors();
+    // ['Minimum order is $25', 'Maximum 10 units per item', 'Shipping method required']
+    
+    // Get detailed error information
+    $metadata = $result->getMetadata();
+    // [
+    //     'validators_run' => 4,
+    //     'validators_passed' => ['inventory'],
+    //     'validators_failed' => ['minimum_order', 'max_quantity', 'shipping_required'],
+    //     'error_details' => [
+    //         ['validator' => 'minimum_order', 'message' => '...', 'context' => [...]],
+    //         ...
+    //     ]
+    // ]
+    
+    return back()->withErrors(['cart' => $result->getErrors()]);
+}
+```
+
+### Example: Complete Checkout Flow
+
+```php
+public function checkout(Request $request)
+{
+    $cart = Cart::findOrFail($request->cart_id);
+    
+    // Define validators for this checkout flow
+    $validators = [
+        new MinimumOrderValidator(config('checkout.minimum_order', 25.00)),
+        new MaxQuantityValidator(config('checkout.max_per_item', 10)),
+        ShippingRequiredValidator::class,
+        InventoryValidator::class,
+    ];
+    
+    // Validate
+    $result = Cart::validateForCheckout($cart, $validators);
+    
+    if ($result->hasFailed()) {
+        return response()->json([
+            'success' => false,
+            'message' => $result->getMessage(),
+            'errors' => $result->getErrors(),
+        ], 422);
+    }
+    
+    // All validations passed - proceed with payment
+    return $this->processPayment($cart);
+}
+```
+
+### CartValidationException
+
+Use this exception in your validators to signal validation failure:
+
+```php
+use AndreiLungeanu\SimpleCart\Exceptions\CartValidationException;
+
+throw new CartValidationException(
+    message: 'Descriptive error message',
+    validator: 'validator_name',           // For debugging/logging
+    context: ['key' => 'value']            // Additional context
+);
+```
+
+The exception provides:
+
+```php
+$e->getMessage();   // 'Descriptive error message'
+$e->validator;      // 'validator_name'
+$e->context;        // ['key' => 'value']
+$e->toArray();      // ['message' => '...', 'validator' => '...', 'context' => [...]]
 ```
 
 ## Usage Examples
